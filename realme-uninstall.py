@@ -230,7 +230,7 @@ package_names = [
 
 def uninstall_app(package_name):
 
-    command = f"adb pm uninstall --user 0 {package_name}"
+    command = f"adb shell pm uninstall --user 0 {package_name}"
 
     subprocess.run(command, shell=True, check=True)
 
