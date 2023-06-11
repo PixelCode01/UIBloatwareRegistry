@@ -33,7 +33,8 @@ Before using the scripts, ensure that you have the following:
 3. Modify the `package_names` list in the script to include the package names of the bloatware apps you want to uninstall. You can find the package names in the respective `<brand>-bloatware-list.md` file.
 
 4. Run the script by executing the following command:
-python <brand>-uninstall.py
+python 
+<brand>-uninstall.py
   
   
 
