@@ -12,7 +12,7 @@ This repository contains Python scripts that automate the uninstallation of bloa
 
 More brands will be added in the future. Stay tuned!
 
-For each supported brand, you will find the following files:
+For each supported brand, you will find the following files inside `<brand-name>` folder:
 
 - `<brand>-uninstall.py`: The Python script that uninstalls bloatware apps for the specific brand.
 - `<brand>-bloatware-list.md`: The list of package names of bloatware apps for the specific brand.
