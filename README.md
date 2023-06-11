@@ -35,7 +35,7 @@ Before using the scripts, ensure that you have the following:
 
 4. Run the script by executing the following command:
 python 
-<brand>-uninstall.py
+`<brand>-uninstall.py`
   
   
 
