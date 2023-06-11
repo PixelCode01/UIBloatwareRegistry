@@ -7,7 +7,7 @@ This repository contains Python scripts that automate the uninstallation of bloa
 
 ## Supported Brands
 
-- Realme
+- [Realme](https://github.com/AnantMishra01/UIBloatwareRegistry/tree/main/Realme)
 - Samsung
 - Oppo
 
