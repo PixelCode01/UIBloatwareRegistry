@@ -8,6 +8,7 @@ This repository contains Python scripts that automate the uninstallation of bloa
 ## Supported Brands
 
 - Realme
+- Samsung
 
 More brands will be added in the future. Stay tuned!
 
