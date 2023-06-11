@@ -9,6 +9,7 @@ This repository contains Python scripts that automate the uninstallation of bloa
 
 - Realme
 - Samsung
+- Oppo
 
 More brands will be added in the future. Stay tuned!
 
