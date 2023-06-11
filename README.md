@@ -23,7 +23,7 @@ Before using the scripts, ensure that you have the following:
 - ADB (Android Debug Bridge) installed on your computer.
 - USB debugging enabled on your Android device.
 - A USB cable to connect your device to the computer.
-
+- Python installed on your computer.
 ## Usage
 
 1. Connect your Android device to your computer using a USB cable.
