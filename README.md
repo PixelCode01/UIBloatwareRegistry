@@ -45,7 +45,7 @@ The script will iterate through the list of package names and attempt to uninsta
 
 5. Monitor the terminal for the uninstallation progress. The script will print the status of each uninstallation attempt.
 
-## Contributing
+## [Contributing](https://github.com/AnantMishra01/UIBloatwareRegistry/blob/main/CONTRIBUTING.md)
 
 Contributions to this repository are welcome! If you have any improvements, support for additional brands, or bug fixes, feel free to open a pull request.
 
