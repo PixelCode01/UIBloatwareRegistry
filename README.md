@@ -11,6 +11,7 @@ This repository contains Python scripts that automate the uninstallation of bloa
 - [Samsung](https://github.com/AnantMishra01/UIBloatwareRegistry/tree/main/Samsung)
 - [Oppo](https://github.com/AnantMishra01/UIBloatwareRegistry/tree/main/Oppo)
 - [Xiaomi](https://github.com/AnantMishra01/UIBloatwareRegistry/tree/main/Xiaomi)
+- [Vivo](https://github.com/AnantMishra01/UIBloatwareRegistry/tree/main/Vivo)
 
 More brands will be added in the future. Stay tuned!
 
