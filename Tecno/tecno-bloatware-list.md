@@ -1,4 +1,5 @@
 net.bat.store
+
 com.gallery20
 com.transsion.calculator
 com.transsion.calendar
