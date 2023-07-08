@@ -12,7 +12,7 @@ This repository contains Python scripts that automate the uninstallation of bloa
 - [Oppo](https://github.com/AnantMishra01/UIBloatwareRegistry/tree/main/Oppo)
 - [Xiaomi](https://github.com/AnantMishra01/UIBloatwareRegistry/tree/main/Xiaomi)
 - [Vivo](https://github.com/AnantMishra01/UIBloatwareRegistry/tree/main/Vivo)
-
+- [Tecno](https://github.com/AnantMishra01/UIBloatwareRegistry/tree/main/Tecno)
 More brands will be added in the future. Stay tuned!
 
 For each supported brand, you will find the following files inside `<brand-name>` folder:
