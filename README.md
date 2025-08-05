@@ -1,59 +1,131 @@
 # UIBloatwareRegistry
-UIBloatwareRegistry: A comprehensive repository listing UI bloatware for companies. Identify and understand pre-installed software that affects device performance.
 
-# Bloatware Uninstaller
+A comprehensive Android bloatware removal tool that helps you identify and safely remove pre-installed applications that affect device performance and privacy.
 
-This repository contains Python scripts that automate the uninstallation of bloatware apps on various Android devices using the ADB (Android Debug Bridge) command-line tool.
+## Features
+
+- **Automatic Device Detection**: Detects your device brand and loads appropriate removal scripts
+- **Interactive Mode**: Choose exactly which apps to remove with safety warnings
+- **Risk Assessment**: Each package is categorized as safe, caution, or dangerous
+- **Backup System**: Create backups before removal for easy restoration
+- **Logging**: Detailed logs of all operations for troubleshooting
+- **Professional Interface**: Clean, user-friendly command-line interface
 
 ## Supported Brands
 
-- [Realme](https://github.com/AnantMishra01/UIBloatwareRegistry/tree/main/Realme)
-- [Samsung](https://github.com/AnantMishra01/UIBloatwareRegistry/tree/main/Samsung)
-- [Oppo](https://github.com/AnantMishra01/UIBloatwareRegistry/tree/main/Oppo)
-- [Xiaomi](https://github.com/AnantMishra01/UIBloatwareRegistry/tree/main/Xiaomi)
-- [Vivo](https://github.com/AnantMishra01/UIBloatwareRegistry/tree/main/Vivo)
-- [Tecno](https://github.com/AnantMishra01/UIBloatwareRegistry/tree/main/Tecno)
+Currently supported:
+- **Samsung** - Galaxy series devices
+- **Xiaomi** - Mi, Redmi, and POCO devices
 
-More brands will be added in the future. Stay tuned!
-
-For each supported brand, you will find the following files inside `<brand-name>` folder:
-
-- `<brand>-uninstall.py`: The Python script that uninstalls bloatware apps for the specific brand.
-- `<brand>-bloatware-list.md`: The list of package names of bloatware apps for the specific brand.
+Coming soon:
+- Realme
+- Oppo  
+- Vivo
+- Tecno
+- OnePlus
 
 ## Prerequisites
 
-Before using the scripts, ensure that you have the following:
+- **Python 3.6+** installed on your computer
+- **ADB (Android Debug Bridge)** installed and added to PATH
+- **USB cable** to connect your device
+- **Android device** with USB debugging enabled
 
-- ADB (Android Debug Bridge) installed on your computer.
-- USB debugging enabled on your Android device.
-- A USB cable to connect your device to the computer.
-- Python installed on your computer.
-## Usage
+### Installing ADB
 
-1. Connect your Android device to your computer using a USB cable.
+**Windows:**
+1. Download Android SDK Platform Tools
+2. Extract and add to PATH environment variable
 
-2. Open a terminal or command prompt and navigate to the directory where the specific brand's uninstall script is located.
+**macOS:**
+```bash
+brew install android-platform-tools
+```
 
-3. Modify the `package_names` list in the script to include the package names of the bloatware apps you want to uninstall. You can find the package names in the respective `<brand>-bloatware-list.md` file.
+**Linux:**
+```bash
+sudo apt install android-tools-adb  # Ubuntu/Debian
+sudo pacman -S android-tools        # Arch Linux
+```
 
-4. Run the script by executing the following command:
-python 
-`<brand>-uninstall.py`
-  
-  
+### Enable USB Debugging
 
-The script will iterate through the list of package names and attempt to uninstall each app using the ADB command.
+1. Go to Settings > About Phone
+2. Tap "Build Number" 7 times to enable Developer Options
+3. Go to Settings > Developer Options
+4. Enable "USB Debugging"
 
-5. Monitor the terminal for the uninstallation progress. The script will print the status of each uninstallation attempt.
+## Quick Start
 
-## [Contributing](https://github.com/AnantMishra01/UIBloatwareRegistry/blob/main/CONTRIBUTING.md)
+1. **Clone the repository:**
+```bash
+git clone https://github.com/AnantMishra01/UIBloatwareRegistry.git
+cd UIBloatwareRegistry
+```
 
-Contributions to this repository are welcome! If you have any improvements, support for additional brands, or bug fixes, feel free to open a pull request.
+2. **Connect your device and run:**
+```bash
+python main.py
+```
+
+The tool will automatically detect your device brand and guide you through the removal process.
+
+## Usage Modes
+
+### Interactive Mode (Recommended)
+- Review each package before removal
+- See risk levels and descriptions
+- Create backups automatically
+- Perfect for beginners
+
+### Batch Mode (Advanced)
+- Remove all configured packages at once
+- Faster for experienced users
+- Use with caution
+
+## Safety Information
+
+**Risk Levels:**
+- **SAFE**: Can be removed without issues
+- **CAUTION**: May affect some functionality
+- **DANGEROUS**: Could cause system instability
+
+**Important Notes:**
+- Always create backups before removal
+- Test on a non-primary device first
+- Some apps may reinstall after system updates
+- Factory reset will restore all removed apps
+
+## Project Structure
+
+```
+UIBloatwareRegistry/
+├── main.py                 # Main application entry point
+├── device_detector.py      # Automatic device brand detection
+├── core/
+│   └── bloatware_remover.py # Base removal functionality
+├── Samsung/
+│   ├── samsung_remover.py   # Samsung-specific implementation
+│   └── samsung_config.json  # Samsung package configuration
+└── Xiaomi/
+    ├── xiaomi_remover.py    # Xiaomi-specific implementation
+    └── xiaomi_config.json   # Xiaomi package configuration
+```
+
+## Contributing
+
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+**Ways to contribute:**
+- Add support for new device brands
+- Update package lists with new bloatware
+- Improve safety classifications
+- Report bugs and issues
+- Enhance documentation
 
 ## Disclaimer
 
-Please note that uninstalling system apps can have unintended consequences and may affect the stability or functionality of your device. Use the scripts at your own risk. Make sure to review the list of package names and understand the implications before proceeding.
+Removing system applications may affect device functionality. Use this tool at your own risk. Always create backups and understand what each package does before removal. The developers are not responsible for any damage to your device.
 
 ## License
 

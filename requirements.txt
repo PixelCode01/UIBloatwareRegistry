@@ -1,0 +1,7 @@
+# No external dependencies required
+# This project uses only Python standard library modules
+# 
+# System requirements:
+# - Python 3.6 or higher
+# - Android Debug Bridge (ADB) installed and in PATH
+# - Android device with USB debugging enabled
