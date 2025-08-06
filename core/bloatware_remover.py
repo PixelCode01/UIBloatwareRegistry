@@ -258,8 +258,7 @@ class BloatwareRemover(ABC):
         print(f"\nFound {len(app_info)} applications")
         print("=" * 50)
         
-        # Display apps with selection
-        selected_packages = []
+        # Display all apps first
         risk_colors = {
             'safe': '[SAFE]',
             'caution': '[CAUTION]', 
@@ -267,54 +266,98 @@ class BloatwareRemover(ABC):
             'unknown': '[UNKNOWN]'
         }
         
-        print("Select apps to remove (y/n/s=skip category/q=quit):")
+        print("All installed applications:")
         print("-" * 50)
         
         for i, app in enumerate(app_info, 1):
             risk_indicator = risk_colors.get(app['risk'], '[UNKNOWN]')
-            print(f"\n{i:3d}. {risk_indicator} {app['name']}")
+            print(f"{i:3d}. {risk_indicator} {app['name']}")
             print(f"     Package: {app['package']}")
             print(f"     Description: {app['description']}")
-            
-            while True:
-                choice = input("     Remove this app? (y/n/q=quit): ").lower().strip()
-                
-                if choice == 'q':
-                    print("Quitting app selection...")
-                    break
-                elif choice == 'y':
-                    selected_packages.append(app['package'])
-                    print("     Added to removal list")
-                    break
-                elif choice == 'n':
-                    break
-                else:
-                    print("     Please enter 'y' for yes, 'n' for no, or 'q' to quit")
-            
-            if choice == 'q':
-                break
-        
-        # Process selected packages
-        if selected_packages:
-            print(f"\nSelected {len(selected_packages)} apps for removal:")
-            for pkg in selected_packages:
-                app_name = next((app['name'] for app in app_info if app['package'] == pkg), pkg)
-                print(f"  - {app_name} ({pkg})")
-            
             print()
-            if input("Create backup before removal? (y/n): ").lower().strip() == 'y':
-                self.backup_packages(selected_packages)
+        
+        print("=" * 50)
+        print("Now select which apps to remove:")
+        print("Enter app numbers separated by commas (e.g., 1,3,5-8,12)")
+        print("Or enter 'all' to select all apps")
+        print("Or enter 'none' to cancel")
+        print("-" * 50)
+        
+        while True:
+            selection = input("Enter your selection: ").strip().lower()
             
-            confirm_text = "yes" if not self.test_mode else "y"
-            warning_text = "This will remove the selected apps" if not self.test_mode else "TEST MODE: This will simulate removing the selected apps"
-            print(f"\n{warning_text}")
-            
-            if input(f"Proceed with removal? (type '{confirm_text}' to confirm): ").lower().strip() == confirm_text:
-                self.remove_packages(selected_packages)
+            if selection == 'none':
+                print("No apps selected for removal")
+                return
+            elif selection == 'all':
+                selected_indices = list(range(1, len(app_info) + 1))
+                break
             else:
-                print("Removal cancelled")
+                try:
+                    selected_indices = []
+                    parts = selection.split(',')
+                    
+                    for part in parts:
+                        part = part.strip()
+                        if '-' in part:
+                            # Handle ranges like "5-8"
+                            start, end = map(int, part.split('-'))
+                            selected_indices.extend(range(start, end + 1))
+                        else:
+                            # Handle single numbers
+                            selected_indices.append(int(part))
+                    
+                    # Validate indices
+                    valid_indices = []
+                    for idx in selected_indices:
+                        if 1 <= idx <= len(app_info):
+                            valid_indices.append(idx)
+                        else:
+                            print(f"Warning: Index {idx} is out of range (1-{len(app_info)})")
+                    
+                    if valid_indices:
+                        selected_indices = sorted(set(valid_indices))  # Remove duplicates and sort
+                        break
+                    else:
+                        print("No valid indices provided. Please try again.")
+                        
+                except ValueError:
+                    print("Invalid format. Please use numbers, ranges (1-5), or commas (1,3,5)")
+                    print("Example: 1,3,5-8,12")
+        
+        # Get selected packages
+        selected_packages = []
+        selected_apps = []
+        
+        for idx in selected_indices:
+            app = app_info[idx - 1]  # Convert to 0-based index
+            selected_packages.append(app['package'])
+            selected_apps.append(app)
+        
+        # Show selected apps for confirmation
+        print(f"\nSelected {len(selected_packages)} apps for removal:")
+        print("-" * 50)
+        
+        for i, app in enumerate(selected_apps, 1):
+            risk_indicator = risk_colors.get(app['risk'], '[UNKNOWN]')
+            print(f"{i:3d}. {risk_indicator} {app['name']}")
+            print(f"     Package: {app['package']}")
+            print(f"     Description: {app['description']}")
+            print()
+        
+        # Final confirmation
+        print("=" * 50)
+        if input("Create backup before removal? (y/n): ").lower().strip() == 'y':
+            self.backup_packages(selected_packages)
+        
+        confirm_text = "yes" if not self.test_mode else "y"
+        warning_text = "This will remove the selected apps" if not self.test_mode else "TEST MODE: This will simulate removing the selected apps"
+        print(f"\n{warning_text}")
+        
+        if input(f"Proceed with removal? (type '{confirm_text}' to confirm): ").lower().strip() == confirm_text:
+            self.remove_packages(selected_packages)
         else:
-            print("No apps selected for removal")
+            print("Removal cancelled")
 
     def interactive_removal(self) -> None:
         """Interactive package removal with user selection"""
