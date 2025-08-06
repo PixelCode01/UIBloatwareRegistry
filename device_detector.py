@@ -12,7 +12,11 @@ class DeviceDetector:
         'vivo': [r'vivo', r'v\d+', r'iqoo'],
         'realme': [r'realme', r'rmx'],
         'tecno': [r'tecno', r'spark', r'camon', r'transsion'],
-        'oneplus': [r'oneplus', r'op', r'1\+', r'nord']
+        'oneplus': [r'oneplus', r'op', r'1\+', r'nord'],
+        'huawei': [r'huawei', r'honor', r'hma', r'lya', r'eva'],
+        'honor': [r'honor', r'hry', r'bkl', r'col'],
+        'motorola': [r'motorola', r'moto', r'xt\d+'],
+        'nothing': [r'nothing', r'phone']
     }
     
     def __init__(self, test_mode: bool = False):
@@ -98,7 +102,11 @@ class DeviceDetector:
                 print("5. Realme")
                 print("6. Tecno")
                 print("7. OnePlus")
-                choice = input("Select brand for testing (1-7): ").strip()
+                print("8. Huawei")
+                print("9. Honor")
+                print("10. Motorola")
+                print("11. Nothing")
+                choice = input("Select brand for testing (1-11): ").strip()
                 
                 brand_map = {
                     '1': 'samsung',
@@ -107,7 +115,11 @@ class DeviceDetector:
                     '4': 'vivo',
                     '5': 'realme',
                     '6': 'tecno',
-                    '7': 'oneplus'
+                    '7': 'oneplus',
+                    '8': 'huawei',
+                    '9': 'honor',
+                    '10': 'motorola',
+                    '11': 'nothing'
                 }
                 
                 brand = brand_map.get(choice)
@@ -141,6 +153,18 @@ class DeviceDetector:
             elif brand == 'oneplus':
                 from OnePlus.oneplus_remover import OnePlusRemover
                 return OnePlusRemover(test_mode=self.test_mode)
+            elif brand == 'huawei':
+                from Huawei.huawei_remover import HuaweiRemover
+                return HuaweiRemover(test_mode=self.test_mode)
+            elif brand == 'honor':
+                from Honor.honor_remover import HonorRemover
+                return HonorRemover(test_mode=self.test_mode)
+            elif brand == 'motorola':
+                from Motorola.motorola_remover import MotorolaRemover
+                return MotorolaRemover(test_mode=self.test_mode)
+            elif brand == 'nothing':
+                from Nothing.nothing_remover import NothingRemover
+                return NothingRemover(test_mode=self.test_mode)
             else:
                 print(f"Brand '{brand}' is not yet supported")
                 return None

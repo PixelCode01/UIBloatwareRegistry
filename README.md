@@ -15,6 +15,10 @@ Your phone comes with tons of apps you never asked for. This tool helps you get 
 - Realme (Realme UI)
 - Tecno (HiOS)
 - OnePlus (OxygenOS)
+- Huawei (EMUI/HarmonyOS)
+- Honor (Magic UI)
+- Motorola (My UX)
+- Nothing (Nothing OS)
 
 ## Setup
 
