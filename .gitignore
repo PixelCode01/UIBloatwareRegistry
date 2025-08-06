@@ -25,21 +25,35 @@ venv/
 env/
 ENV/
 
-# IDE
+# IDE and Editor files
 .vscode/
 .idea/
 *.swp
 *.swo
+.kiro/
 
-# Logs
+# Logs and temporary files
 *.log
+*.tmp
+*.temp
 
 # Backup files
 *_backup.json
+backup_*.json
 
-# OS
+# OS generated files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
 # Config files (may contain sensitive data)
 *_config.json
+config.json
+
+# Old uninstaller scripts (replaced by new system)
+*-uninstall.py
+*-uninstaller.py
