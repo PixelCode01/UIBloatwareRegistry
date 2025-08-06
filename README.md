@@ -1,12 +1,14 @@
 # UIBloatwareRegistry
 
-A comprehensive Android bloatware removal tool that helps you identify and safely remove pre-installed applications that affect device performance and privacy.
+A comprehensive Android bloatware removal tool that helps you identify and safely remove pre-installed applications that affect device performance and privacy without root.
 
 ## Features
 
 - **Automatic Device Detection**: Detects your device brand and loads appropriate removal scripts
 - **Interactive Mode**: Choose exactly which apps to remove with safety warnings
+- **All Apps Listing**: View and select from all installed applications on your device
 - **Risk Assessment**: Each package is categorized as safe, caution, or dangerous
+- **App Name Resolution**: Shows human-readable app names alongside package names
 - **Backup System**: Create backups before removal for easy restoration
 - **Logging**: Detailed logs of all operations for troubleshooting
 - **Professional Interface**: Clean, user-friendly command-line interface
@@ -14,15 +16,19 @@ A comprehensive Android bloatware removal tool that helps you identify and safel
 ## Supported Brands
 
 Currently supported:
-- **Samsung** - Galaxy series devices
-- **Xiaomi** - Mi, Redmi, and POCO devices
+- **Samsung** - Galaxy series devices with One UI
+- **Xiaomi** - Mi, Redmi, and POCO devices with MIUI
+- **Oppo** - Oppo devices with ColorOS
+- **Vivo** - Vivo and iQOO devices with FunTouch OS
+- **Realme** - Realme devices with Realme UI
+- **Tecno** - Tecno devices with HiOS
+- **OnePlus** - OnePlus devices with OxygenOS
 
 Coming soon:
-- Realme
-- Oppo  
-- Vivo
-- Tecno
-- OnePlus
+- Huawei (EMUI/HarmonyOS)
+- Honor (Magic UI)
+- Motorola (My UX)
+- Nothing (Nothing OS)
 
 ## Prerequisites
 
@@ -83,10 +89,17 @@ The tool will automatically detect your device brand and guide you through the r
 - Create backups automatically
 - Perfect for beginners
 
-### Batch Mode (Advanced)
+### All Apps Mode (Advanced)
+- Lists all installed applications on device
+- Shows app names and package names
+- Select any app for removal
+- Includes risk assessment for known bloatware
+- Full control over what gets removed
+
+### Batch Mode (Expert)
 - Remove all configured packages at once
 - Faster for experienced users
-- Use with caution
+- Use with extreme caution
 
 ### Test Mode
 - Run without ADB or connected device
@@ -107,22 +120,6 @@ The tool will automatically detect your device brand and guide you through the r
 - Use test mode to preview changes without risk
 - Some apps may reinstall after system updates
 - Factory reset will restore all removed apps
-
-## Project Structure
-
-```
-UIBloatwareRegistry/
-├── main.py                 # Main application entry point
-├── device_detector.py      # Automatic device brand detection
-├── core/
-│   └── bloatware_remover.py # Base removal functionality
-├── Samsung/
-│   ├── samsung_remover.py   # Samsung-specific implementation
-│   └── samsung_config.json  # Samsung package configuration
-└── Xiaomi/
-    ├── xiaomi_remover.py    # Xiaomi-specific implementation
-    └── xiaomi_config.json   # Xiaomi package configuration
-```
 
 ## Contributing
 

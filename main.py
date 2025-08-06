@@ -56,16 +56,23 @@ def main():
     
     print("Available options:")
     print("1. Interactive removal (recommended for beginners)")
-    print("2. Remove all configured packages (advanced users)")
-    print("3. Exit")
+    print("2. List all apps and select what to remove")
+    print("3. Remove all configured packages (advanced users)")
+    print("4. Exit")
     
     while True:
-        choice = input("Select option (1-3): ").strip()
+        choice = input("Select option (1-4): ").strip()
         
         if choice == '1':
             remover.interactive_removal()
             break
         elif choice == '2':
+            print("This will list all installed applications on your device.")
+            print("You can then select which ones to remove.")
+            if input("Continue? (y/n): ").lower().strip() == 'y':
+                remover.list_all_apps_removal()
+            break
+        elif choice == '3':
             warning_text = "TEST MODE: This will simulate removing" if test_mode else "WARNING: This will remove"
             print(f"{warning_text} ALL configured bloatware packages.")
             if not test_mode:
@@ -79,11 +86,11 @@ def main():
             else:
                 print("Operation cancelled.")
             break
-        elif choice == '3':
+        elif choice == '4':
             print("Exiting...")
             break
         else:
-            print("Invalid choice. Please select 1, 2, or 3.")
+            print("Invalid choice. Please select 1, 2, 3, or 4.")
 
 if __name__ == "__main__":
     main()
