@@ -40,7 +40,7 @@ def main():
     
     if not remover:
         print("This device brand is not currently supported.")
-        print("Supported brands: Samsung, Xiaomi")
+        print("Supported brands: Samsung, Xiaomi, Oppo, Vivo, Realme, Tecno, OnePlus")
         print("More brands will be added in future updates.")
         return
     

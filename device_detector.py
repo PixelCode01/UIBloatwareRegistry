@@ -8,10 +8,11 @@ class DeviceDetector:
     BRAND_PATTERNS = {
         'samsung': [r'samsung', r'sm-', r'galaxy'],
         'xiaomi': [r'xiaomi', r'redmi', r'poco', r'mi '],
-        'oppo': [r'oppo', r'cph', r'realme'],
-        'vivo': [r'vivo', r'v\d+'],
+        'oppo': [r'oppo', r'cph'],
+        'vivo': [r'vivo', r'v\d+', r'iqoo'],
         'realme': [r'realme', r'rmx'],
-        'tecno': [r'tecno', r'spark', r'camon']
+        'tecno': [r'tecno', r'spark', r'camon', r'transsion'],
+        'oneplus': [r'oneplus', r'op', r'1\+', r'nord']
     }
     
     def __init__(self, test_mode: bool = False):
@@ -92,13 +93,25 @@ class DeviceDetector:
                 print("\nAvailable brands for testing:")
                 print("1. Samsung")
                 print("2. Xiaomi")
-                choice = input("Select brand for testing (1-2): ").strip()
+                print("3. Oppo")
+                print("4. Vivo")
+                print("5. Realme")
+                print("6. Tecno")
+                print("7. OnePlus")
+                choice = input("Select brand for testing (1-7): ").strip()
                 
-                if choice == '1':
-                    brand = 'samsung'
-                elif choice == '2':
-                    brand = 'xiaomi'
-                else:
+                brand_map = {
+                    '1': 'samsung',
+                    '2': 'xiaomi',
+                    '3': 'oppo',
+                    '4': 'vivo',
+                    '5': 'realme',
+                    '6': 'tecno',
+                    '7': 'oneplus'
+                }
+                
+                brand = brand_map.get(choice)
+                if not brand:
                     print("Invalid choice")
                     return None
             else:
@@ -109,11 +122,25 @@ class DeviceDetector:
         try:
             if brand == 'samsung':
                 from Samsung.samsung_remover import SamsungRemover
-                return SamsungRemover()
+                return SamsungRemover(test_mode=self.test_mode)
             elif brand == 'xiaomi':
                 from Xiaomi.xiaomi_remover import XiaomiRemover
-                return XiaomiRemover()
-            # Add other brands as they are implemented
+                return XiaomiRemover(test_mode=self.test_mode)
+            elif brand == 'oppo':
+                from Oppo.oppo_remover import OppoRemover
+                return OppoRemover(test_mode=self.test_mode)
+            elif brand == 'vivo':
+                from Vivo.vivo_remover import VivoRemover
+                return VivoRemover(test_mode=self.test_mode)
+            elif brand == 'realme':
+                from Realme.realme_remover import RealmeRemover
+                return RealmeRemover(test_mode=self.test_mode)
+            elif brand == 'tecno':
+                from Tecno.tecno_remover import TecnoRemover
+                return TecnoRemover(test_mode=self.test_mode)
+            elif brand == 'oneplus':
+                from OnePlus.oneplus_remover import OnePlusRemover
+                return OnePlusRemover(test_mode=self.test_mode)
             else:
                 print(f"Brand '{brand}' is not yet supported")
                 return None
