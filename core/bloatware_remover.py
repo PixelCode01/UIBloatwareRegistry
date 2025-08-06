@@ -8,9 +8,10 @@ from abc import ABC, abstractmethod
 class BloatwareRemover(ABC):
     """Base class for brand-specific bloatware removal"""
     
-    def __init__(self, brand: str, config_file: str = None):
+    def __init__(self, brand: str, config_file: str = None, test_mode: bool = False):
         self.brand = brand
         self.config_file = config_file or f"{brand.lower()}_config.json"
+        self.test_mode = test_mode
         self.logger = self._setup_logging()
         self.packages = self._load_packages()
         
@@ -45,6 +46,10 @@ class BloatwareRemover(ABC):
     
     def check_device_connection(self) -> bool:
         """Check if device is connected via ADB"""
+        if self.test_mode:
+            print("Running in test mode - skipping device connection check")
+            return True
+            
         try:
             result = subprocess.run(['adb', 'devices'], 
                                   capture_output=True, text=True, check=True)
@@ -53,6 +58,13 @@ class BloatwareRemover(ABC):
             
             if not devices:
                 print("No devices connected. Please connect your device and enable USB debugging.")
+                
+                # Ask user if they want to continue in test mode
+                choice = input("Do you want to run in test mode anyway? (y/n): ").lower().strip()
+                if choice == 'y':
+                    print("Continuing in test mode - no actual changes will be made")
+                    self.test_mode = True
+                    return True
                 return False
             
             print(f"Found {len(devices)} connected device(s)")
@@ -60,13 +72,27 @@ class BloatwareRemover(ABC):
             
         except subprocess.CalledProcessError:
             print("ADB not found. Please install Android Debug Bridge.")
+            choice = input("Do you want to run in test mode anyway? (y/n): ").lower().strip()
+            if choice == 'y':
+                print("Continuing in test mode - no actual changes will be made")
+                self.test_mode = True
+                return True
             return False
         except FileNotFoundError:
             print("ADB not found in PATH. Please install Android SDK platform tools.")
+            choice = input("Do you want to run in test mode anyway? (y/n): ").lower().strip()
+            if choice == 'y':
+                print("Continuing in test mode - no actual changes will be made")
+                self.test_mode = True
+                return True
             return False
     
     def get_installed_packages(self) -> List[str]:
         """Get list of installed packages on device"""
+        if self.test_mode:
+            # Return all configured packages for testing
+            return self._get_all_packages()
+            
         try:
             result = subprocess.run(['adb', 'shell', 'pm', 'list', 'packages'], 
                                   capture_output=True, text=True, check=True)
@@ -79,6 +105,11 @@ class BloatwareRemover(ABC):
     
     def uninstall_package(self, package: str) -> bool:
         """Uninstall a single package"""
+        if self.test_mode:
+            print(f"TEST MODE: Would remove package: {package}")
+            self.logger.info(f"TEST MODE: Would remove package: {package}")
+            return True
+            
         try:
             result = subprocess.run(['adb', 'shell', 'pm', 'uninstall', '--user', '0', package], 
                                   capture_output=True, text=True)
@@ -98,16 +129,19 @@ class BloatwareRemover(ABC):
         """Create backup of packages before removal"""
         backup_file = f"{self.brand.lower()}_backup.json"
         try:
+            import datetime
             backup_data = {
                 'brand': self.brand,
                 'packages': packages,
-                'timestamp': subprocess.run(['date'], capture_output=True, text=True).stdout.strip()
+                'timestamp': datetime.datetime.now().isoformat(),
+                'test_mode': self.test_mode
             }
             
             with open(backup_file, 'w') as f:
                 json.dump(backup_data, f, indent=2)
             
-            print(f"Backup created: {backup_file}")
+            mode_text = "TEST MODE: " if self.test_mode else ""
+            print(f"{mode_text}Backup created: {backup_file}")
             return True
             
         except Exception as e:
@@ -121,8 +155,13 @@ class BloatwareRemover(ABC):
         
         installed_packages = self.get_installed_packages()
         
-        print(f"\n{self.brand} Bloatware Removal Tool")
+        mode_text = " (TEST MODE)" if self.test_mode else ""
+        print(f"\n{self.brand} Bloatware Removal Tool{mode_text}")
         print("-" * 40)
+        
+        if self.test_mode:
+            print("Running in test mode - no actual changes will be made")
+            print("-" * 40)
         
         categories = self.packages.get('categories', {})
         selected_packages = []
@@ -163,7 +202,8 @@ class BloatwareRemover(ABC):
         if packages is None:
             packages = self._get_all_packages()
         
-        print(f"Starting removal of {len(packages)} packages...")
+        mode_text = "TEST MODE: " if self.test_mode else ""
+        print(f"{mode_text}Starting removal of {len(packages)} packages...")
         
         success_count = 0
         failed_count = 0
@@ -174,12 +214,14 @@ class BloatwareRemover(ABC):
             else:
                 failed_count += 1
         
-        print(f"\nRemoval complete:")
+        print(f"\n{mode_text}Removal complete:")
         print(f"  Successfully removed: {success_count}")
         print(f"  Failed to remove: {failed_count}")
         
-        if failed_count > 0:
+        if failed_count > 0 and not self.test_mode:
             print("Check the log file for details on failed removals")
+        elif self.test_mode:
+            print("No actual changes were made - this was a test run")
     
     def _get_all_packages(self) -> List[str]:
         """Get all package names from configuration"""

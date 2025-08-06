@@ -9,17 +9,27 @@ def main():
     print("UIBloatwareRegistry - Android Bloatware Removal Tool")
     print("=" * 55)
     
-    detector = DeviceDetector()
+    # Check for test mode argument
+    test_mode = '--test' in sys.argv or '-t' in sys.argv
+    
+    if test_mode:
+        print("Running in TEST MODE - no actual changes will be made")
+        print("=" * 55)
+    
+    detector = DeviceDetector(test_mode=test_mode)
     
     # Check device connection and detect brand
-    print("Detecting connected device...")
+    if not test_mode:
+        print("Detecting connected device...")
     device_info = detector.get_device_info()
     
     if not device_info:
-        print("No device detected. Please ensure:")
-        print("1. Device is connected via USB")
-        print("2. USB debugging is enabled")
-        print("3. ADB is installed and in PATH")
+        if not test_mode:
+            print("No device detected. Please ensure:")
+            print("1. Device is connected via USB")
+            print("2. USB debugging is enabled")
+            print("3. ADB is installed and in PATH")
+            print("\nTip: Use --test flag to run in test mode without a device")
         return
     
     detector.print_device_info()
@@ -34,8 +44,14 @@ def main():
         print("More brands will be added in future updates.")
         return
     
+    # Set test mode on remover if needed
+    if test_mode:
+        remover.test_mode = True
+    
     # Run the remover
-    print(f"Starting {device_info['detected_brand'].title()} bloatware removal...")
+    brand_name = device_info.get('detected_brand', 'Unknown').title()
+    mode_text = " (TEST MODE)" if test_mode else ""
+    print(f"Starting {brand_name} bloatware removal{mode_text}...")
     print()
     
     print("Available options:")
@@ -50,11 +66,15 @@ def main():
             remover.interactive_removal()
             break
         elif choice == '2':
-            print("WARNING: This will remove ALL configured bloatware packages.")
-            print("This action cannot be easily undone.")
-            confirm = input("Are you sure you want to continue? (type 'yes' to confirm): ")
+            warning_text = "TEST MODE: This will simulate removing" if test_mode else "WARNING: This will remove"
+            print(f"{warning_text} ALL configured bloatware packages.")
+            if not test_mode:
+                print("This action cannot be easily undone.")
             
-            if confirm.lower() == 'yes':
+            confirm_text = "yes" if not test_mode else "y"
+            confirm = input(f"Are you sure you want to continue? (type '{confirm_text}' to confirm): ")
+            
+            if (test_mode and confirm.lower() == 'y') or (not test_mode and confirm.lower() == 'yes'):
                 remover.remove_packages()
             else:
                 print("Operation cancelled.")

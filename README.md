@@ -68,6 +68,11 @@ cd UIBloatwareRegistry
 python main.py
 ```
 
+3. **Or test without a device:**
+```bash
+python main.py --test
+```
+
 The tool will automatically detect your device brand and guide you through the removal process.
 
 ## Usage Modes
@@ -83,6 +88,12 @@ The tool will automatically detect your device brand and guide you through the r
 - Faster for experienced users
 - Use with caution
 
+### Test Mode
+- Run without ADB or connected device
+- Perfect for testing and development
+- No actual changes are made
+- Use `--test` or `-t` flag
+
 ## Safety Information
 
 **Risk Levels:**
@@ -93,6 +104,7 @@ The tool will automatically detect your device brand and guide you through the r
 **Important Notes:**
 - Always create backups before removal
 - Test on a non-primary device first
+- Use test mode to preview changes without risk
 - Some apps may reinstall after system updates
 - Factory reset will restore all removed apps
 

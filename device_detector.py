@@ -14,11 +14,23 @@ class DeviceDetector:
         'tecno': [r'tecno', r'spark', r'camon']
     }
     
-    def __init__(self):
+    def __init__(self, test_mode: bool = False):
         self.device_info = None
+        self.test_mode = test_mode
     
     def get_device_info(self) -> Optional[dict]:
         """Get device brand and model information"""
+        if self.test_mode:
+            # Return mock device info for testing
+            print("TEST MODE: Using mock device information")
+            self.device_info = {
+                'brand': 'test_brand',
+                'model': 'test_model',
+                'manufacturer': 'test_manufacturer',
+                'detected_brand': 'samsung'  # Default to Samsung for testing
+            }
+            return self.device_info
+            
         try:
             # Get device properties
             brand_result = subprocess.run(['adb', 'shell', 'getprop', 'ro.product.brand'], 
@@ -45,9 +57,17 @@ class DeviceDetector:
             
         except subprocess.CalledProcessError:
             print("Failed to get device information. Make sure device is connected.")
+            choice = input("Do you want to run in test mode anyway? (y/n): ").lower().strip()
+            if choice == 'y':
+                self.test_mode = True
+                return self.get_device_info()
             return None
         except FileNotFoundError:
             print("ADB not found. Please install Android SDK platform tools.")
+            choice = input("Do you want to run in test mode anyway? (y/n): ").lower().strip()
+            if choice == 'y':
+                self.test_mode = True
+                return self.get_device_info()
             return None
     
     def _detect_brand(self, brand: str, model: str, manufacturer: str) -> Optional[str]:
@@ -67,9 +87,24 @@ class DeviceDetector:
             self.get_device_info()
         
         if not self.device_info or not self.device_info['detected_brand']:
-            return None
-        
-        brand = self.device_info['detected_brand']
+            if self.test_mode:
+                # Allow user to choose brand in test mode
+                print("\nAvailable brands for testing:")
+                print("1. Samsung")
+                print("2. Xiaomi")
+                choice = input("Select brand for testing (1-2): ").strip()
+                
+                if choice == '1':
+                    brand = 'samsung'
+                elif choice == '2':
+                    brand = 'xiaomi'
+                else:
+                    print("Invalid choice")
+                    return None
+            else:
+                return None
+        else:
+            brand = self.device_info['detected_brand']
         
         try:
             if brand == 'samsung':
@@ -93,7 +128,8 @@ class DeviceDetector:
             self.get_device_info()
         
         if self.device_info:
-            print("Device Information:")
+            mode_text = " (TEST MODE)" if self.test_mode else ""
+            print(f"Device Information{mode_text}:")
             print(f"  Brand: {self.device_info['brand']}")
             print(f"  Model: {self.device_info['model']}")
             print(f"  Manufacturer: {self.device_info['manufacturer']}")

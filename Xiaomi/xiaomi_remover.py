@@ -7,8 +7,8 @@ from core.bloatware_remover import BloatwareRemover
 class XiaomiRemover(BloatwareRemover):
     """Xiaomi-specific bloatware remover"""
     
-    def __init__(self):
-        super().__init__('Xiaomi', 'Xiaomi/xiaomi_config.json')
+    def __init__(self, test_mode: bool = False):
+        super().__init__('Xiaomi', 'Xiaomi/xiaomi_config.json', test_mode)
     
     def _get_default_packages(self):
         """Default Xiaomi bloatware configuration"""
