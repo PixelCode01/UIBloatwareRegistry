@@ -57,3 +57,9 @@ config.json
 # Old uninstaller scripts (replaced by new system)
 *-uninstall.py
 *-uninstaller.py
+
+# Build artifacts
+build/
+dist/
+*.spec
+*.egg-info/

@@ -20,7 +20,18 @@ Your phone comes with tons of apps you never asked for. This tool helps you get 
 - Motorola (My UX)
 - Nothing (Nothing OS)
 
-## Setup
+## Quick Download (Recommended)
+
+**Download standalone executable** - No Python installation required!
+
+1. Go to [Releases](https://github.com/PixelCode01/UIBloatwareRegistry/releases)
+2. Download for your system:
+   - **Windows**: `android-bloatware-remover-windows.exe`
+   - **Linux**: `android-bloatware-remover-linux`
+   - **Mac**: `android-bloatware-remover-macos`
+3. Run the executable directly!
+
+## Manual Setup (Advanced)
 
 1. **Install ADB**
    - Windows: Download Android SDK Platform Tools, add to PATH
@@ -33,12 +44,24 @@ Your phone comes with tons of apps you never asked for. This tool helps you get 
 
 3. **Get the tool**
    ```bash
-   git clone https://github.com/AnantMishra01/UIBloatwareRegistry.git
+   git clone https://github.com/PixelCode01/UIBloatwareRegistry.git
    cd UIBloatwareRegistry
    ```
 
 ## How to use
 
+### Using Standalone Executable
+Just run the downloaded executable:
+```bash
+# Windows
+android-bloatware-remover-windows.exe
+
+# Linux/Mac
+./android-bloatware-remover-linux
+./android-bloatware-remover-macos
+```
+
+### Using Python Source
 Connect your phone and run:
 ```bash
 python main.py

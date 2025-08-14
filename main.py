@@ -3,9 +3,16 @@ import sys
 import os
 from device_detector import DeviceDetector
 
+try:
+    from version import get_version
+    VERSION = get_version()
+except ImportError:
+    VERSION = "1.0.0"
+
 def main():
     """Main application entry point"""
-    print("UIBloatwareRegistry - Android Bloatware Removal Tool")
+    print("Android Bloatware Remover")
+    print(f"Version {VERSION}")
     print("=" * 55)
     
     # Check for test mode argument
@@ -17,7 +24,6 @@ def main():
     
     detector = DeviceDetector(test_mode=test_mode)
     
-    # Check device connection and detect brand
     if not test_mode:
         print("Detecting connected device...")
     device_info = detector.get_device_info()
@@ -39,7 +45,7 @@ def main():
     
     if not remover:
         print("This device brand is not currently supported.")
-        print("Supported brands: Samsung, Xiaomi, Oppo, Vivo, Realme, Tecno, OnePlus")
+        print("Supported brands: Samsung, Xiaomi, Oppo, Vivo, Realme, Tecno, OnePlus, Huawei, Honor, Motorola, Nothing")
         print("More brands will be added in future updates.")
         return
     
