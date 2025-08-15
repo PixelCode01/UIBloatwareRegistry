@@ -24,6 +24,7 @@ def run_command(cmd, cwd=None):
 def create_spec_file():
     """Create PyInstaller spec file"""
     spec_content = '''# -*- mode: python ; coding: utf-8 -*-
+import os
 
 block_cipher = None
 
@@ -31,21 +32,27 @@ block_cipher = None
 brand_dirs = ['Samsung', 'Xiaomi', 'Oppo', 'Vivo', 'Realme', 'Tecno', 'OnePlus', 'Huawei', 'Honor', 'Motorola', 'Nothing']
 datas = []
 
-# Add brand directories
+# Add brand directories (only if they exist)
 for brand in brand_dirs:
-    datas.append((f'{brand}/*.md', f'{brand}/'))
-    datas.append((f'{brand}/*.py', f'{brand}/'))
+    if os.path.exists(brand):
+        md_files = os.path.join(brand, '*.md')
+        py_files = os.path.join(brand, '*.py')
+        datas.append((md_files, brand + '/'))
+        datas.append((py_files, brand + '/'))
 
 # Add core module
-datas.append(('core/*.py', 'core/'))
+if os.path.exists('core'):
+    datas.append(('core/*.py', 'core/'))
 
-# Add other files
-datas.append(('README.md', '.'))
-datas.append(('LICENSE', '.'))
+# Add other files (only if they exist)
+if os.path.exists('README.md'):
+    datas.append(('README.md', '.'))
+if os.path.exists('LICENSE'):
+    datas.append(('LICENSE', '.'))
 
 a = Analysis(
     ['main.py'],
-    pathex=[],
+    pathex=[os.getcwd()],
     binaries=[],
     datas=datas,
     hiddenimports=[
@@ -60,7 +67,9 @@ a = Analysis(
         'Honor.honor_remover',
         'Motorola.motorola_remover',
         'Nothing.nothing_remover',
-        'core.bloatware_remover'
+        'core.bloatware_remover',
+        'device_detector',
+        'version'
     ],
     hookspath=[],
     hooksconfig={},
@@ -85,7 +94,7 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
+    upx=False,
     upx_exclude=[],
     runtime_tmpdir=None,
     console=True,
@@ -121,16 +130,10 @@ def build_executable():
     return True
 
 def main():
-    """Main build function"""
-    print("Android Bloatware Remover - Build Script")
-    print("=" * 50)
-    
-    if build_executable():
-        print("\n✓ Build completed successfully!")
-        print("Executable location: dist/android-bloatware-remover")
-    else:
-        print("\n✗ Build failed!")
-        sys.exit(1)
+    """Main build function - just create spec file for GitHub Actions"""
+    print("Creating PyInstaller spec file...")
+    create_spec_file()
+    print("Spec file created successfully!")
 
 if __name__ == "__main__":
     main()
