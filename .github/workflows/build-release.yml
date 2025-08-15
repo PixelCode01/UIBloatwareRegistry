@@ -93,6 +93,15 @@ jobs:
     - name: Download all artifacts
       uses: actions/download-artifact@v4
 
+    - name: List downloaded artifacts
+      run: |
+        echo "Current directory contents:"
+        ls -la
+        echo "Looking for artifact directories:"
+        find . -name "*android-bloatware-remover*" -type f
+        echo "All files:"
+        find . -type f
+
     - name: Create Release
       uses: softprops/action-gh-release@v2
       with:
@@ -132,7 +141,7 @@ jobs:
         draft: false
         prerelease: false
         files: |
-          android-bloatware-remover-windows.exe/android-bloatware-remover.exe
-          android-bloatware-remover-linux/android-bloatware-remover
-          android-bloatware-remover-macos/android-bloatware-remover
+          android-bloatware-remover-windows.exe/*
+          android-bloatware-remover-linux/*
+          android-bloatware-remover-macos/*
         fail_on_unmatched_files: false
