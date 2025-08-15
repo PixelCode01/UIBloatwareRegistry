@@ -45,19 +45,53 @@ jobs:
         echo "Python test completed"
       shell: bash
 
-    - name: Create PyInstaller spec file
-      run: |
-        echo "Creating spec file..."
-        python build_spec.py
-        echo "Spec file created. Contents:"
-        cat android-bloatware-remover.spec
-
-    - name: Build with PyInstaller
+    - name: Build with PyInstaller (Cross-platform)
       run: |
         echo "Building with PyInstaller..."
-        pyinstaller android-bloatware-remover.spec --clean --noconfirm
+        if [ "${{ matrix.os }}" = "windows-latest" ]; then
+          # Windows uses semicolon separator
+          pyinstaller --onefile --console --name android-bloatware-remover main.py \
+            --add-data "core;core" \
+            --add-data "README.md;." \
+            --hidden-import core.bloatware_remover \
+            --hidden-import device_detector \
+            --hidden-import version \
+            --hidden-import Samsung.samsung_remover \
+            --hidden-import Xiaomi.xiaomi_remover \
+            --hidden-import Oppo.oppo_remover \
+            --hidden-import Vivo.vivo_remover \
+            --hidden-import Realme.realme_remover \
+            --hidden-import Tecno.tecno_remover \
+            --hidden-import OnePlus.oneplus_remover \
+            --hidden-import Huawei.huawei_remover \
+            --hidden-import Honor.honor_remover \
+            --hidden-import Motorola.motorola_remover \
+            --hidden-import Nothing.nothing_remover \
+            --clean --noconfirm
+        else
+          # Unix uses colon separator
+          pyinstaller --onefile --console --name android-bloatware-remover main.py \
+            --add-data "core:core" \
+            --add-data "README.md:." \
+            --hidden-import core.bloatware_remover \
+            --hidden-import device_detector \
+            --hidden-import version \
+            --hidden-import Samsung.samsung_remover \
+            --hidden-import Xiaomi.xiaomi_remover \
+            --hidden-import Oppo.oppo_remover \
+            --hidden-import Vivo.vivo_remover \
+            --hidden-import Realme.realme_remover \
+            --hidden-import Tecno.tecno_remover \
+            --hidden-import OnePlus.oneplus_remover \
+            --hidden-import Huawei.huawei_remover \
+            --hidden-import Honor.honor_remover \
+            --hidden-import Motorola.motorola_remover \
+            --hidden-import Nothing.nothing_remover \
+            --clean --noconfirm
+        fi
         echo "Build completed. Checking dist directory:"
         ls -la dist/
+      shell: bash
 
     - name: Test executable
       run: |
