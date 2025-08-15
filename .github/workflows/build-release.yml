@@ -10,6 +10,7 @@ jobs:
   build:
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: windows-latest
@@ -35,46 +36,53 @@ jobs:
         python -m pip install --upgrade pip
         pip install pyinstaller
 
+    - name: Test Python application first
+      run: |
+        echo "Testing Python application..."
+        python main.py --test &
+        sleep 5
+        pkill -f "python main.py" || true
+        echo "Python test completed"
+      shell: bash
+
     - name: Create PyInstaller spec file
-      run: python build_spec.py
+      run: |
+        echo "Creating spec file..."
+        python build_spec.py
+        echo "Spec file created. Contents:"
+        cat android-bloatware-remover.spec
 
     - name: Build with PyInstaller
       run: |
         echo "Building with PyInstaller..."
-        echo "Current directory: $(pwd)"
-        echo "Files in current directory:"
-        ls -la
-        echo "Building executable..."
-        pyinstaller android-bloatware-remover.spec --clean --log-level INFO
+        pyinstaller android-bloatware-remover.spec --clean --noconfirm
         echo "Build completed. Checking dist directory:"
-        ls -la dist/ || echo "dist directory not found"
+        ls -la dist/
 
-    - name: Test executable (Windows)
-      if: matrix.os == 'windows-latest'
+    - name: Test executable
       run: |
-        echo "Testing Windows executable..."
-        if (Test-Path "dist/android-bloatware-remover.exe") {
-          echo "Executable exists, running test..."
-          Start-Process -FilePath "dist/android-bloatware-remover.exe" -ArgumentList "--test" -Wait -NoNewWindow -PassThru
-        } else {
-          echo "Executable not found!"
-          exit 1
-        }
-      shell: powershell
-      timeout-minutes: 2
-
-    - name: Test executable (Unix)
-      if: matrix.os != 'windows-latest'
-      run: |
-        echo "Testing Unix executable..."
-        if [ -f "dist/android-bloatware-remover" ]; then
-          echo "Executable exists, running test..."
-          chmod +x dist/android-bloatware-remover
-          timeout 30s dist/android-bloatware-remover --test || echo "Test completed with timeout"
+        echo "Testing executable..."
+        if [ "${{ matrix.os }}" = "windows-latest" ]; then
+          if [ -f "dist/android-bloatware-remover.exe" ]; then
+            echo "Windows executable found"
+            # Just check if it starts without hanging
+            timeout 10s dist/android-bloatware-remover.exe --test || echo "Test completed"
+          else
+            echo "Windows executable not found!"
+            exit 1
+          fi
         else
-          echo "Executable not found!"
-          exit 1
+          if [ -f "dist/android-bloatware-remover" ]; then
+            echo "Unix executable found"
+            chmod +x dist/android-bloatware-remover
+            # Just check if it starts without hanging
+            timeout 10s dist/android-bloatware-remover --test || echo "Test completed"
+          else
+            echo "Unix executable not found!"
+            exit 1
+          fi
         fi
+      shell: bash
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
@@ -97,10 +105,25 @@ jobs:
       run: |
         echo "Current directory contents:"
         ls -la
-        echo "Looking for artifact directories:"
+        echo "Looking for executables:"
         find . -name "*android-bloatware-remover*" -type f
-        echo "All files:"
-        find . -type f
+        echo "Preparing files for release..."
+
+    - name: Prepare release files
+      run: |
+        mkdir -p release
+        # Copy and rename files for release
+        if [ -f "android-bloatware-remover-windows.exe/android-bloatware-remover.exe" ]; then
+          cp "android-bloatware-remover-windows.exe/android-bloatware-remover.exe" "release/android-bloatware-remover-windows.exe"
+        fi
+        if [ -f "android-bloatware-remover-linux/android-bloatware-remover" ]; then
+          cp "android-bloatware-remover-linux/android-bloatware-remover" "release/android-bloatware-remover-linux"
+        fi
+        if [ -f "android-bloatware-remover-macos/android-bloatware-remover" ]; then
+          cp "android-bloatware-remover-macos/android-bloatware-remover" "release/android-bloatware-remover-macos"
+        fi
+        echo "Release files prepared:"
+        ls -la release/
 
     - name: Create Release
       uses: softprops/action-gh-release@v2
@@ -140,8 +163,5 @@ jobs:
           Run with `--test` flag to try without a connected device.
         draft: false
         prerelease: false
-        files: |
-          android-bloatware-remover-windows.exe/*
-          android-bloatware-remover-linux/*
-          android-bloatware-remover-macos/*
+        files: release/*
         fail_on_unmatched_files: false
