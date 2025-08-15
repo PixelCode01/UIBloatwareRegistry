@@ -20,7 +20,7 @@ Your phone comes with tons of apps you never asked for. This tool helps you get 
 - Motorola (My UX)
 - Nothing (Nothing OS)
 
-## Quick Download (Recommended)
+## Quick Download
 
 **Download standalone executable** - No Python installation required!
 
@@ -30,6 +30,8 @@ Your phone comes with tons of apps you never asked for. This tool helps you get 
    - **Linux**: `android-bloatware-remover-linux`
    - **Mac**: `android-bloatware-remover-macos`
 3. Run the executable directly!
+
+**Note**: Windows Defender may show a false positive. See [SECURITY.md](SECURITY.md) for details.
 
 ## Manual Setup (Advanced)
 
@@ -111,8 +113,12 @@ Proceed? (yes): yes
 
 Found a bug? Want to add support for your phone brand? Check out [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## Warning
+## Important Notes
 
+### Windows Defender False Positive
+Windows Defender may flag the executable as a virus. This is a **false positive** common with PyInstaller executables. The tool is completely safe - all source code is open and auditable. See [SECURITY.md](SECURITY.md) for details and solutions.
+
+### Safety Warning
 This tool modifies your phone's software. We're not responsible if something breaks. Use common sense and make backups.
 
 ## License

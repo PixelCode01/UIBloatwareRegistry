@@ -163,6 +163,41 @@ jobs:
         echo "Release files prepared:"
         ls -la release/
 
+    - name: Generate file hashes
+      run: |
+        cd release
+        echo "# File Verification Hashes" > HASHES.md
+        echo "" >> HASHES.md
+        echo "Use these SHA256 hashes to verify file integrity:" >> HASHES.md
+        echo "" >> HASHES.md
+        
+        for file in *; do
+          if [ -f "$file" ] && [ "$file" != "HASHES.md" ]; then
+            hash=$(sha256sum "$file" | cut -d' ' -f1)
+            size=$(stat -c%s "$file")
+            echo "**$file**" >> HASHES.md
+            echo "- SHA256: \`$hash\`" >> HASHES.md
+            echo "- Size: $(printf "%'d" $size) bytes" >> HASHES.md
+            echo "" >> HASHES.md
+          fi
+        done
+        
+        echo "## How to verify:" >> HASHES.md
+        echo "" >> HASHES.md
+        echo "**Windows (PowerShell):**" >> HASHES.md
+        echo "\`\`\`powershell" >> HASHES.md
+        echo "Get-FileHash -Algorithm SHA256 android-bloatware-remover-windows.exe" >> HASHES.md
+        echo "\`\`\`" >> HASHES.md
+        echo "" >> HASHES.md
+        echo "**Linux/Mac:**" >> HASHES.md
+        echo "\`\`\`bash" >> HASHES.md
+        echo "sha256sum android-bloatware-remover-linux" >> HASHES.md
+        echo "shasum -a 256 android-bloatware-remover-macos" >> HASHES.md
+        echo "\`\`\`" >> HASHES.md
+        
+        echo "Generated hashes:"
+        cat HASHES.md
+
     - name: Create Release
       uses: softprops/action-gh-release@v2
       env:
@@ -175,10 +210,14 @@ jobs:
           
           Standalone executables for Windows, Linux, and macOS.
           
+          ### ⚠️ Windows Defender False Positive
+          Windows Defender may flag the executable as a virus. This is a **false positive** common with PyInstaller executables. The tool is completely safe - all source code is open and auditable. See [SECURITY.md](https://github.com/PixelCode01/UIBloatwareRegistry/blob/main/SECURITY.md) for details and solutions.
+          
           ### Download Instructions:
           - **Windows**: Download `android-bloatware-remover-windows.exe`
           - **Linux**: Download `android-bloatware-remover-linux`
           - **macOS**: Download `android-bloatware-remover-macos`
+          - **Verification**: Download `HASHES.md` to verify file integrity
           
           ### Usage:
           1. Download the appropriate executable for your operating system
@@ -201,6 +240,14 @@ jobs:
           
           ### Test Mode:
           Run with `--test` flag to try without a connected device.
+          
+          ### Alternative Installation:
+          If you prefer to avoid the executable, run from Python source:
+          ```bash
+          git clone https://github.com/PixelCode01/UIBloatwareRegistry.git
+          cd UIBloatwareRegistry
+          python main.py
+          ```
         draft: false
         prerelease: false
         files: release/*
