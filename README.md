@@ -33,6 +33,17 @@ Your phone comes with tons of apps you never asked for. This tool helps you get 
 
 **Note**: Windows Defender may show a false positive. See [SECURITY.md](SECURITY.md) for details.
 
+## No PC? Use Shizuku!
+
+**For Honor devices** - Remove bloatware directly on your phone using Shizuku:
+
+1. Install [Shizuku](https://github.com/RikkaApps/Shizuku/releases) on your Honor device
+2. Download `honor_remover.sh` from the [Honor folder](Honor/)
+3. Run the script using a Shizuku-compatible terminal
+4. Follow the interactive prompts to remove bloatware
+
+See [Honor/SHIZUKU_USAGE.md](Honor/SHIZUKU_USAGE.md) for detailed setup instructions.
+
 ## Manual Setup (Advanced)
 
 1. **Install ADB**
