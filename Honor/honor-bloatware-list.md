@@ -2,6 +2,12 @@
 
 This document contains a comprehensive list of bloatware packages found on Honor devices running Magic UI. Each package is categorized by risk level to help you make informed removal decisions.
 
+## Available Tools
+
+- **Python Script**: `honor_remover.py` - For use with PC and ADB
+- **Shell Script**: `honor_remover.sh` - For use with Shizuku (no PC required)
+- **Shizuku Guide**: See [SHIZUKU_USAGE.md](SHIZUKU_USAGE.md) for setup instructions
+
 ## Risk Levels
 - **SAFE**: Can be removed without affecting core functionality
 - **CAUTION**: May affect some features, remove with care
@@ -123,3 +129,17 @@ This document contains a comprehensive list of bloatware packages found on Honor
 - Use the interactive removal mode for safer operation
 - Honor devices may have different packages depending on region
 - Magic UI updates may restore some removed apps
+
+## Using the Tools
+
+### Python Script (PC Required)
+```bash
+python honor_remover.py
+```
+
+### Shell Script (Shizuku - No PC Required)
+```bash
+./honor_remover.sh
+```
+
+For detailed Shizuku setup instructions, see [SHIZUKU_USAGE.md](SHIZUKU_USAGE.md).

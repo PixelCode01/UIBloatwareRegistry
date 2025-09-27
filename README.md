@@ -33,6 +33,28 @@ Your phone comes with tons of apps you never asked for. This tool helps you get 
 
 **Note**: Windows Defender may show a false positive. See [SECURITY.md](SECURITY.md) for details.
 
+## No PC? Use Shizuku!
+
+**Remove bloatware directly on your phone** using Shizuku - No PC required!
+
+1. Install [Shizuku](https://github.com/RikkaApps/Shizuku/releases) on your device
+2. Download the shell script for your brand:
+   - **Samsung**: `Samsung/samsung_remover.sh`
+   - **Xiaomi**: `Xiaomi/xiaomi_remover.sh`
+   - **OnePlus**: `OnePlus/oneplus_remover.sh`
+   - **Realme**: `Realme/realme_remover.sh`
+   - **Oppo**: `Oppo/oppo_remover.sh`
+   - **Vivo**: `Vivo/vivo_remover.sh`
+   - **Huawei**: `Huawei/huawei_remover.sh`
+   - **Honor**: `Honor/honor_remover.sh`
+   - **Motorola**: `Motorola/motorola_remover.sh`
+   - **Nothing**: `Nothing/nothing_remover.sh`
+   - **Tecno**: `Tecno/tecno_remover.sh`
+3. Run the script using a Shizuku-compatible terminal
+4. Follow the interactive prompts to remove bloatware
+
+See [Honor/SHIZUKU_USAGE.md](Honor/SHIZUKU_USAGE.md) for detailed setup instructions (applies to all brands).
+
 ## Manual Setup (Advanced)
 
 1. **Install ADB**
