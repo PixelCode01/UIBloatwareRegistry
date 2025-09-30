@@ -128,6 +128,26 @@ Create backup? (y/n): y
 Proceed? (yes): yes
 ```
 
+## Export package data
+
+Generate a consolidated JSON file with all bloatware package information from every supported brand:
+
+```bash
+python scripts/generate_data_bundle.py
+```
+
+This creates `build/data.json` containing:
+- All package names, descriptions, and risk levels
+- Brand/platform associations
+- Category classifications (adware, telemetry, OEM tools)
+- Metadata (generation timestamp, package counts)
+
+Use this data for:
+- Custom tooling and automation
+- Package analysis and research
+- Integration with other debloating workflows
+- Creating custom removal scripts
+
 ## Important stuff
 
 - **Always backup first** - Things can go wrong
