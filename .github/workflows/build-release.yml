@@ -53,7 +53,6 @@ jobs:
       run: |
         echo "Building with PyInstaller..."
         if [ "${{ matrix.os }}" = "windows-latest" ]; then
-          # Windows uses semicolon separator
           pyinstaller --onefile --console --name android-bloatware-remover main.py \
             --add-data "core;core" \
             --add-data "README.md;." \
@@ -73,7 +72,6 @@ jobs:
             --hidden-import Nothing.nothing_remover \
             --clean --noconfirm
         else
-          # Unix uses colon separator
           pyinstaller --onefile --console --name android-bloatware-remover main.py \
             --add-data "core:core" \
             --add-data "README.md:." \
@@ -103,7 +101,6 @@ jobs:
         if [ "${{ matrix.os }}" = "windows-latest" ]; then
           if [ -f "dist/android-bloatware-remover.exe" ]; then
             echo "Windows executable found"
-            # Just check if it starts without hanging
             timeout 10s dist/android-bloatware-remover.exe --test || echo "Test completed"
           else
             echo "Windows executable not found!"
@@ -113,7 +110,6 @@ jobs:
           if [ -f "dist/android-bloatware-remover" ]; then
             echo "Unix executable found"
             chmod +x dist/android-bloatware-remover
-            # Just check if it starts without hanging
             timeout 10s dist/android-bloatware-remover --test || echo "Test completed"
           else
             echo "Unix executable not found!"
@@ -150,7 +146,6 @@ jobs:
     - name: Prepare release files
       run: |
         mkdir -p release
-        # Copy and rename files for release
         if [ -f "android-bloatware-remover-windows.exe/android-bloatware-remover.exe" ]; then
           cp "android-bloatware-remover-windows.exe/android-bloatware-remover.exe" "release/android-bloatware-remover-windows.exe"
         fi
@@ -210,7 +205,7 @@ jobs:
           
           Standalone executables for Windows, Linux, and macOS.
           
-          ### ⚠️ Windows Defender False Positive
+          ### Windows Defender False Positive
           Windows Defender may flag the executable as a virus. This is a **false positive** common with PyInstaller executables. The tool is completely safe - all source code is open and auditable. See [SECURITY.md](https://github.com/PixelCode01/UIBloatwareRegistry/blob/main/SECURITY.md) for details and solutions.
           
           ### Download Instructions:

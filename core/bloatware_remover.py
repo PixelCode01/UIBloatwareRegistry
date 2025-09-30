@@ -5,6 +5,16 @@ import logging
 from typing import List, Dict, Optional
 from abc import ABC, abstractmethod
 
+from .adb_utils import (
+    ADBCommandError,
+    ADBNotFoundError,
+    DeviceSelectionError,
+    DeviceState,
+    list_devices,
+    resolve_adb_path,
+    run_command,
+)
+
 class BloatwareRemover(ABC):
     """Base class for brand-specific bloatware removal"""
     
@@ -14,6 +24,9 @@ class BloatwareRemover(ABC):
         self.test_mode = test_mode
         self.logger = self._setup_logging()
         self.packages = self._load_packages()
+        self._app_name_cache: Dict[str, str] = {}
+        self.adb_path: Optional[str] = None
+        self.device_serial: Optional[str] = None
         
     def _setup_logging(self) -> logging.Logger:
         """Setup logging configuration"""
@@ -49,59 +62,71 @@ class BloatwareRemover(ABC):
         if self.test_mode:
             print("Running in test mode - skipping device connection check")
             return True
-            
+
         try:
-            result = subprocess.run(['adb', 'devices'], 
-                                  capture_output=True, text=True, check=True)
-            devices = [line for line in result.stdout.split('\n') 
-                      if line.strip() and not line.startswith('List')]
-            
-            if not devices:
-                print("No devices connected. Please connect your device and enable USB debugging.")
-                
-                # Ask user if they want to continue in test mode
-                choice = input("Do you want to run in test mode anyway? (y/n): ").lower().strip()
-                if choice == 'y':
-                    print("Continuing in test mode - no actual changes will be made")
-                    self.test_mode = True
+            adb_path = self._ensure_adb_path()
+        except ADBNotFoundError as exc:
+            print(str(exc))
+            return self._prompt_enable_test_mode()
+
+        try:
+            devices = list_devices(adb_path)
+        except ADBCommandError as exc:
+            self.logger.error("Failed to query devices: %s", exc)
+            print("Failed to communicate with adb. Ensure the platform tools are installed and try again.")
+            return self._prompt_enable_test_mode()
+
+        if not devices:
+            print("No devices connected. Please connect your device and enable USB debugging.")
+            return self._prompt_enable_test_mode()
+
+        authorized = [device for device in devices if device.state == 'device']
+        unauthorized = [device for device in devices if device.state != 'device']
+
+        if unauthorized:
+            print("Detected devices that are not ready:")
+            for device in unauthorized:
+                print(f"  - {device.summary()}")
+            print("Unlock your device and accept the USB debugging prompt, then try again.")
+
+        if self.device_serial:
+            for device in authorized:
+                if device.serial == self.device_serial:
                     return True
-                return False
-            
-            print(f"Found {len(devices)} connected device(s)")
+            print("Previously selected device is no longer connected. Please select a device again.")
+            self.device_serial = None
+
+        if not authorized:
+            return self._prompt_enable_test_mode()
+
+        selected_device = self._select_device(authorized)
+        if selected_device:
+            self.device_serial = selected_device.serial
             return True
-            
-        except subprocess.CalledProcessError:
-            print("ADB not found. Please install Android Debug Bridge.")
-            choice = input("Do you want to run in test mode anyway? (y/n): ").lower().strip()
-            if choice == 'y':
-                print("Continuing in test mode - no actual changes will be made")
-                self.test_mode = True
-                return True
-            return False
-        except FileNotFoundError:
-            print("ADB not found in PATH. Please install Android SDK platform tools.")
-            choice = input("Do you want to run in test mode anyway? (y/n): ").lower().strip()
-            if choice == 'y':
-                print("Continuing in test mode - no actual changes will be made")
-                self.test_mode = True
-                return True
-            return False
+
+        return False
     
     def get_installed_packages(self) -> List[str]:
         """Get list of installed packages on device"""
         if self.test_mode:
-            # Return all configured packages for testing
             return self._get_all_packages()
-            
-        try:
-            result = subprocess.run(['adb', 'shell', 'pm', 'list', 'packages'], 
-                                  capture_output=True, text=True, check=True)
-            packages = [line.replace('package:', '').strip() 
-                       for line in result.stdout.split('\n') if line.startswith('package:')]
-            return packages
-        except subprocess.CalledProcessError as e:
-            self.logger.error(f"Failed to get installed packages: {e}")
+        
+        if not self.device_serial and not self.check_device_connection():
             return []
+
+        try:
+            result = self._run_adb(['shell', 'pm', 'list', 'packages'], timeout=60)
+        except (ADBCommandError, DeviceSelectionError) as exc:
+            self.logger.error("Failed to get installed packages: %s", exc)
+            print("Unable to retrieve the package list. Ensure the device stays unlocked and USB debugging remains enabled.")
+            return []
+
+        packages = [
+            line.replace('package:', '').strip()
+            for line in result.stdout.split('\n')
+            if line.startswith('package:')
+        ]
+        return packages
     
     def uninstall_package(self, package: str) -> bool:
         """Uninstall a single package"""
@@ -109,21 +134,29 @@ class BloatwareRemover(ABC):
             print(f"TEST MODE: Would remove package: {package}")
             self.logger.info(f"TEST MODE: Would remove package: {package}")
             return True
-            
-        try:
-            result = subprocess.run(['adb', 'shell', 'pm', 'uninstall', '--user', '0', package], 
-                                  capture_output=True, text=True)
-            
-            if result.returncode == 0:
-                self.logger.info(f"Successfully removed: {package}")
-                return True
-            else:
-                self.logger.warning(f"Failed to remove: {package} - {result.stderr.strip()}")
-                return False
-                
-        except Exception as e:
-            self.logger.error(f"Error removing {package}: {e}")
+
+        if not self.device_serial and not self.check_device_connection():
             return False
+
+        try:
+            result = self._run_adb(
+                ['shell', 'pm', 'uninstall', '--user', '0', package],
+                check=False,
+                timeout=60,
+            )
+        except (ADBCommandError, DeviceSelectionError) as exc:
+            self.logger.error("Error removing %s: %s", package, exc)
+            return False
+
+        stdout = (result.stdout or "").strip().lower()
+        stderr = (result.stderr or "").strip()
+
+        if result.returncode == 0 and ('success' in stdout or not stdout):
+            self.logger.info("Successfully removed: %s", package)
+            return True
+
+        self.logger.warning("Failed to remove %s - %s", package, stderr or stdout or "Unknown error")
+        return False
     
     def backup_packages(self, packages: List[str]) -> bool:
         """Create backup of packages before removal"""
@@ -150,210 +183,216 @@ class BloatwareRemover(ABC):
     
     def get_app_name(self, package_name: str) -> str:
         """Get human-readable app name from package name"""
+        if package_name in self._app_name_cache:
+            return self._app_name_cache[package_name]
+
         if self.test_mode:
-            # Return mock app names for testing
             app_names = {
                 'com.android.chrome': 'Chrome',
                 'com.google.android.gm': 'Gmail',
                 'com.facebook.katana': 'Facebook',
                 'com.instagram.android': 'Instagram'
             }
-            return app_names.get(package_name, f"Test App ({package_name.split('.')[-1]})")
+            app_label = app_names.get(package_name, f"Test App ({package_name.split('.')[-1]})")
+            self._app_name_cache[package_name] = app_label
+            return app_label
         
         try:
-            result = subprocess.run(['adb', 'shell', 'pm', 'dump', package_name], 
-                                  capture_output=True, text=True, timeout=5)
-            
-            # Parse the dump output to find the app label
+            result = self._run_adb(['shell', 'pm', 'dump', package_name], timeout=10, check=False)
+
             for line in result.stdout.split('\n'):
                 if 'applicationLabel=' in line:
                     label = line.split('applicationLabel=')[1].strip()
-                    return label
-                elif 'labelRes=' in line and 'labelRes=0x0' not in line:
-                    # Try to get the label from resources
-                    result2 = subprocess.run(['adb', 'shell', 'dumpsys', 'package', package_name], 
-                                           capture_output=True, text=True, timeout=5)
-                    for line2 in result2.stdout.split('\n'):
-                        if 'versionName=' in line2:
-                            break
-                        if package_name in line2 and '=' in line2:
-                            continue
-            
-            # Fallback: try to get from package manager
-            result = subprocess.run(['adb', 'shell', 'pm', 'list', 'packages', '-f', package_name], 
-                                  capture_output=True, text=True, timeout=5)
-            if result.stdout.strip():
-                return package_name.split('.')[-1].title()
-                
-        except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
+                    if label:
+                        self._app_name_cache[package_name] = label
+                        return label
+
+            if 'labelRes=' in result.stdout and 'labelRes=0x0' not in result.stdout:
+                alt = self._run_adb(['shell', 'dumpsys', 'package', package_name], timeout=10, check=False)
+                for line in alt.stdout.split('\n'):
+                    if 'applicationLabel=' in line:
+                        label = line.split('applicationLabel=')[1].strip()
+                        if label:
+                            self._app_name_cache[package_name] = label
+                            return label
+
+            lookup = self._run_adb(['shell', 'pm', 'list', 'packages', '-f', package_name], timeout=10, check=False)
+            if lookup.stdout.strip():
+                fallback = package_name.split('.')[-1].title()
+                self._app_name_cache[package_name] = fallback
+                return fallback
+
+        except (ADBCommandError, DeviceSelectionError):
             pass
-        
-        # Final fallback: use package name
-        return package_name.split('.')[-1].title()
+
+        fallback = package_name.split('.')[-1].title()
+        self._app_name_cache[package_name] = fallback
+        return fallback
+
+    def get_package_metadata(self, package_name: str) -> Dict[str, str]:
+        """Retrieve risk and description metadata for a package"""
+        categories = self.packages.get('categories', {})
+        for category, package_list in categories.items():
+            for package_info in package_list:
+                if package_info['name'] == package_name:
+                    return {
+                        'risk': package_info.get('risk', 'safe'),
+                        'description': package_info.get('description', 'No description'),
+                        'category': category
+                    }
+        return {
+            'risk': 'unknown',
+            'description': 'Not listed in curated bloatware configuration',
+            'category': 'unknown'
+        }
 
     def list_all_apps_removal(self) -> None:
-        """List all installed apps and let user select which to remove"""
         if not self.check_device_connection():
             return
-        
+
         print("Fetching all installed applications...")
         installed_packages = self.get_installed_packages()
-        
+
         if not installed_packages:
             print("No packages found or failed to retrieve package list")
             return
-        
+
         mode_text = " (TEST MODE)" if self.test_mode else ""
         print(f"\n{self.brand} - All Apps Removal Tool{mode_text}")
         print("=" * 50)
-        
+
         if self.test_mode:
             print("Running in test mode - no actual changes will be made")
             print("=" * 50)
-        
-        # Filter out system packages that shouldn't be shown
-        system_packages = [
-            'android', 'com.android.systemui', 'com.android.settings',
-            'com.android.launcher', 'com.android.phone', 'com.android.contacts'
-        ]
-        
-        # Get app info for all packages
+
+        system_packages = {
+            'android',
+            'com.android.systemui',
+            'com.android.settings',
+            'com.android.launcher',
+            'com.android.phone',
+            'com.android.contacts',
+        }
+
         print("Loading app information...")
-        app_info = []
-        
-        for i, package in enumerate(installed_packages):
-            if any(sys_pkg in package for sys_pkg in system_packages):
+        app_info: List[Dict[str, str]] = []
+
+        for index, package in enumerate(installed_packages):
+            if any(token in package for token in system_packages):
                 continue
-                
-            if i % 50 == 0:  # Show progress every 50 apps
-                print(f"Processed {i}/{len(installed_packages)} packages...")
-            
+
+            if index % 50 == 0:
+                print(f"Processed {index}/{len(installed_packages)} packages...")
+
             app_name = self.get_app_name(package)
-            
-            # Determine risk level from our configuration
-            risk_level = 'unknown'
-            description = 'User installed or system app'
-            
-            # Check if this package is in our known bloatware list
-            categories = self.packages.get('categories', {})
-            for category, package_list in categories.items():
-                for package_info in package_list:
-                    if package_info['name'] == package:
-                        risk_level = package_info.get('risk', 'safe')
-                        description = package_info.get('description', 'No description')
-                        break
-                if risk_level != 'unknown':
-                    break
-            
-            app_info.append({
-                'package': package,
-                'name': app_name,
-                'risk': risk_level,
-                'description': description
-            })
-        
-        # Sort apps by name for easier browsing
-        app_info.sort(key=lambda x: x['name'].lower())
-        
+            metadata = self.get_package_metadata(package)
+
+            app_info.append(
+                {
+                    'package': package,
+                    'name': app_name,
+                    'risk': metadata['risk'],
+                    'description': metadata['description'],
+                }
+            )
+
+        app_info.sort(key=lambda entry: entry['name'].lower())
+
         print(f"\nFound {len(app_info)} applications")
         print("=" * 50)
-        
-        # Display all apps first
-        risk_colors = {
+
+        risk_labels = {
             'safe': '[SAFE]',
-            'caution': '[CAUTION]', 
+            'caution': '[CAUTION]',
             'dangerous': '[DANGER]',
-            'unknown': '[UNKNOWN]'
+            'unknown': '[UNKNOWN]',
         }
-        
+
         print("All installed applications:")
         print("-" * 50)
-        
-        for i, app in enumerate(app_info, 1):
-            risk_indicator = risk_colors.get(app['risk'], '[UNKNOWN]')
-            print(f"{i:3d}. {risk_indicator} {app['name']}")
+
+        for position, app in enumerate(app_info, 1):
+            risk_indicator = risk_labels.get(app['risk'], '[UNKNOWN]')
+            print(f"{position:3d}. {risk_indicator} {app['name']}")
             print(f"     Package: {app['package']}")
             print(f"     Description: {app['description']}")
             print()
-        
+
         print("=" * 50)
         print("Now select which apps to remove:")
         print("Enter app numbers separated by commas (e.g., 1,3,5-8,12)")
         print("Or enter 'all' to select all apps")
         print("Or enter 'none' to cancel")
         print("-" * 50)
-        
+
         while True:
             selection = input("Enter your selection: ").strip().lower()
-            
+
             if selection == 'none':
                 print("No apps selected for removal")
                 return
-            elif selection == 'all':
-                selected_indices = list(range(1, len(app_info) + 1))
-                break
+
+            if selection == 'all':
+                indices = list(range(1, len(app_info) + 1))
             else:
                 try:
-                    selected_indices = []
-                    parts = selection.split(',')
-                    
-                    for part in parts:
-                        part = part.strip()
-                        if '-' in part:
-                            # Handle ranges like "5-8"
-                            start, end = map(int, part.split('-'))
-                            selected_indices.extend(range(start, end + 1))
+                    indices = []
+                    for chunk in selection.split(','):
+                        chunk = chunk.strip()
+                        if '-' in chunk:
+                            start, end = map(int, chunk.split('-'))
+                            indices.extend(range(start, end + 1))
                         else:
-                            # Handle single numbers
-                            selected_indices.append(int(part))
-                    
-                    # Validate indices
-                    valid_indices = []
-                    for idx in selected_indices:
-                        if 1 <= idx <= len(app_info):
-                            valid_indices.append(idx)
-                        else:
-                            print(f"Warning: Index {idx} is out of range (1-{len(app_info)})")
-                    
-                    if valid_indices:
-                        selected_indices = sorted(set(valid_indices))  # Remove duplicates and sort
-                        break
-                    else:
-                        print("No valid indices provided. Please try again.")
-                        
+                            indices.append(int(chunk))
                 except ValueError:
                     print("Invalid format. Please use numbers, ranges (1-5), or commas (1,3,5)")
                     print("Example: 1,3,5-8,12")
-        
-        # Get selected packages
+                    continue
+
+            valid = []
+            for index in indices:
+                if 1 <= index <= len(app_info):
+                    valid.append(index)
+                else:
+                    print(f"Warning: Index {index} is out of range (1-{len(app_info)})")
+
+            if not valid:
+                print("No valid indices provided. Please try again.")
+                continue
+
+            indices = sorted(set(valid))
+            break
+
         selected_packages = []
         selected_apps = []
-        
-        for idx in selected_indices:
-            app = app_info[idx - 1]  # Convert to 0-based index
+
+        for index in indices:
+            app = app_info[index - 1]
             selected_packages.append(app['package'])
             selected_apps.append(app)
-        
-        # Show selected apps for confirmation
+
         print(f"\nSelected {len(selected_packages)} apps for removal:")
         print("-" * 50)
-        
-        for i, app in enumerate(selected_apps, 1):
-            risk_indicator = risk_colors.get(app['risk'], '[UNKNOWN]')
-            print(f"{i:3d}. {risk_indicator} {app['name']}")
+
+        for position, app in enumerate(selected_apps, 1):
+            risk_indicator = risk_labels.get(app['risk'], '[UNKNOWN]')
+            print(f"{position:3d}. {risk_indicator} {app['name']}")
             print(f"     Package: {app['package']}")
             print(f"     Description: {app['description']}")
             print()
-        
-        # Final confirmation
+
         print("=" * 50)
         if input("Create backup before removal? (y/n): ").lower().strip() == 'y':
             self.backup_packages(selected_packages)
-        
+
         confirm_text = "yes" if not self.test_mode else "y"
-        warning_text = "This will remove the selected apps" if not self.test_mode else "TEST MODE: This will simulate removing the selected apps"
-        print(f"\n{warning_text}")
-        
+        message = (
+            "TEST MODE: This will simulate removing the selected apps"
+            if self.test_mode
+            else "This will remove the selected apps from the current user"
+        )
+        print(f"\n{message}")
+
         if input(f"Proceed with removal? (type '{confirm_text}' to confirm): ").lower().strip() == confirm_text:
             self.remove_packages(selected_packages)
         else:
@@ -405,9 +444,9 @@ class BloatwareRemover(ABC):
         else:
             print("No packages selected for removal")
     
-    def remove_packages(self, packages: List[str] = None) -> None:
+    def remove_packages(self, packages: List[str] = None, skip_connection_check: bool = False) -> None:
         """Remove specified packages or all configured packages"""
-        if not self.check_device_connection():
+        if not skip_connection_check and not self.check_device_connection():
             return
         
         if packages is None:
@@ -444,3 +483,236 @@ class BloatwareRemover(ABC):
                 all_packages.append(package_info['name'])
         
         return all_packages
+
+    def configure_adb(self, adb_path: Optional[str], device_serial: Optional[str]) -> None:
+        """Persist adb context provided by the device detector."""
+
+        if adb_path:
+            self.adb_path = adb_path
+        if device_serial:
+            self.device_serial = device_serial
+
+    def _ensure_adb_path(self) -> str:
+        """Resolve and cache the adb executable path."""
+
+        if self.adb_path:
+            return self.adb_path
+
+        self.adb_path = resolve_adb_path()
+        return self.adb_path
+
+    def _prompt_enable_test_mode(self) -> bool:
+        """Ask the user if they want to continue in test mode."""
+
+        choice = input("Do you want to run in test mode anyway? (y/n): ").lower().strip()
+        if choice == 'y':
+            print("Continuing in test mode - no actual changes will be made")
+            self.test_mode = True
+            return True
+        return False
+
+    def _select_device(self, authorized_devices: List[DeviceState]) -> Optional[DeviceState]:
+        """Select a device from the authorised list, prompting when needed."""
+
+        if not authorized_devices:
+            return None
+
+        if len(authorized_devices) == 1:
+            device = authorized_devices[0]
+            print(f"Using device: {device.summary()}")
+            return device
+
+        print("Multiple authorised devices detected:")
+        for idx, device in enumerate(authorized_devices, start=1):
+            print(f"  {idx}. {device.summary()}")
+
+        while True:
+            selection = input(f"Select device (1-{len(authorized_devices)}) or 'c' to cancel: ").strip().lower()
+            if selection in {'c', 'cancel', 'q', 'quit'}:
+                print("Device selection cancelled")
+                return None
+
+            try:
+                index = int(selection)
+            except ValueError:
+                print("Invalid selection. Please try again.")
+                continue
+
+            if 1 <= index <= len(authorized_devices):
+                device = authorized_devices[index - 1]
+                print(f"Using device: {device.summary()}")
+                return device
+
+            print("Selection out of range. Please try again.")
+
+    def _run_adb(self, args: List[str], *, timeout: int = 15, check: bool = True) -> subprocess.CompletedProcess:
+        """Run an adb command for the selected device."""
+
+        if self.test_mode:
+            raise ADBCommandError("Attempted to execute adb command while in test mode")
+
+        adb_path = self._ensure_adb_path()
+
+        if not self.device_serial:
+            raise DeviceSelectionError(
+                "No authorised device selected for adb operations", devices=[]
+            )
+
+        return run_command(
+            adb_path,
+            args,
+            device_serial=self.device_serial,
+            timeout=timeout,
+            check=check,
+        )
+
+    def manual_package_removal(self) -> None:
+        """Allow users to remove a package by typing its name or app label"""
+        if not self.check_device_connection():
+            return
+
+        installed_packages = self.get_installed_packages()
+
+        if not installed_packages:
+            print("No packages found or failed to retrieve package list")
+            return
+
+        print("\nManual Package Removal")
+        print("=" * 50)
+        if self.test_mode:
+            print("Running in test mode - no actual changes will be made")
+            print("-" * 50)
+
+        print("Type the full package name (e.g., com.android.chrome) or part of the app name.")
+        print("Type 'back' to return to the previous menu.")
+
+        risk_colors = {
+            'safe': '[SAFE]',
+            'caution': '[CAUTION]',
+            'dangerous': '[DANGER]',
+            'unknown': '[UNKNOWN]'
+        }
+
+        while True:
+            query = input("\nEnter package or app name: ").strip()
+
+            if not query:
+                print("Please enter a value or type 'back' to exit.")
+                continue
+
+            if query.lower() in {'back', 'exit', 'quit', 'q'}:
+                print("Returning to main menu.")
+                return
+
+            matches = []
+            seen = set()
+            lowered_query = query.lower()
+
+            for package in installed_packages:
+                app_label = self.get_app_name(package)
+                if lowered_query in package.lower() or lowered_query in app_label.lower():
+                    if package in seen:
+                        continue
+                    seen.add(package)
+                    metadata = self.get_package_metadata(package)
+                    matches.append({
+                        'package': package,
+                        'name': app_label,
+                        'risk': metadata['risk'],
+                        'description': metadata['description']
+                    })
+
+            if not matches:
+                print(f"No packages found matching '{query}'. Try again.")
+                continue
+
+            matches.sort(key=lambda x: x['name'].lower())
+
+            print("\nMatches found:")
+            print("-" * 50)
+            for idx, app in enumerate(matches, 1):
+                risk_indicator = risk_colors.get(app['risk'], '[UNKNOWN]')
+                print(f"{idx:3d}. {risk_indicator} {app['name']}")
+                print(f"     Package: {app['package']}")
+                print(f"     Description: {app['description']}")
+                print()
+
+            if len(matches) == 1:
+                selected_packages = [matches[0]['package']]
+            else:
+                print("Select apps to remove by entering numbers, ranges (1-3), or 'all'.")
+                print("Type 'back' to search again without removing anything.")
+
+                while True:
+                    selection = input("Selection: ").strip().lower()
+
+                    if not selection:
+                        print("Please enter a selection or 'back'.")
+                        continue
+
+                    if selection in {'back', 'cancel', 'q'}:
+                        selected_packages = []
+                        break
+
+                    if selection == 'all':
+                        selected_packages = [app['package'] for app in matches]
+                        break
+
+                    try:
+                        selected_indices = []
+                        for part in selection.split(','):
+                            part = part.strip()
+                            if '-' in part:
+                                start, end = map(int, part.split('-'))
+                                selected_indices.extend(range(start, end + 1))
+                            else:
+                                selected_indices.append(int(part))
+
+                        valid_indices = []
+                        for idx in selected_indices:
+                            if 1 <= idx <= len(matches):
+                                valid_indices.append(idx)
+                            else:
+                                print(f"Warning: Index {idx} is out of range (1-{len(matches)})")
+
+                        if valid_indices:
+                            selected_packages = [matches[idx - 1]['package'] for idx in sorted(set(valid_indices))]
+                            break
+                        else:
+                            print("No valid selections detected. Try again.")
+                    except ValueError:
+                        print("Invalid format. Use numbers (1,2,5) or ranges (2-4).")
+
+            if not selected_packages:
+                print("No packages selected for removal.")
+                continue
+
+            print("=" * 50)
+            if input("Create backup before removal? (y/n): ").lower().strip() == 'y':
+                self.backup_packages(selected_packages)
+
+            confirm_text = "yes" if not self.test_mode else "y"
+            warning_text = (
+                "TEST MODE: This will simulate removing the selected apps"
+                if self.test_mode else
+                "This will remove the selected apps from the current user"
+            )
+            print(f"\n{warning_text}")
+            if input(f"Proceed with removal? (type '{confirm_text}' to confirm): ").lower().strip() == confirm_text:
+                self.remove_packages(selected_packages, skip_connection_check=True)
+
+                if input("Remove another app? (y/n): ").lower().strip() == 'y':
+                    installed_packages = [pkg for pkg in installed_packages if pkg not in selected_packages]
+                    for pkg in selected_packages:
+                        self._app_name_cache.pop(pkg, None)
+                    if not self.test_mode:
+                        installed_packages = self.get_installed_packages()
+                        if not installed_packages:
+                            print("No additional packages detected on the device.")
+                            return
+                    continue
+                else:
+                    print("Manual removal complete.")
+                    return
+            else:
+                print("Removal cancelled for the selected apps.")

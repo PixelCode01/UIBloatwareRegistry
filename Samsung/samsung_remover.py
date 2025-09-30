@@ -60,10 +60,11 @@ def main():
     print("Samsung Bloatware Removal Tool")
     print("1. Interactive removal (recommended)")
     print("2. List all apps and select what to remove")
-    print("3. Remove all configured packages")
-    print("4. Exit")
+    print("3. Manually remove by package or app name")
+    print("4. Remove all configured packages")
+    print("5. Exit")
     
-    choice = input("Select option (1-4): ").strip()
+    choice = input("Select option (1-5): ").strip()
     
     if choice == '1':
         remover.interactive_removal()
@@ -72,9 +73,11 @@ def main():
         if input("Continue? (y/n): ").lower() == 'y':
             remover.list_all_apps_removal()
     elif choice == '3':
+        remover.manual_package_removal()
+    elif choice == '4':
         if input("This will remove ALL configured packages. Continue? (y/n): ").lower() == 'y':
             remover.remove_packages()
-    elif choice == '4':
+    elif choice == '5':
         print("Exiting...")
     else:
         print("Invalid choice")

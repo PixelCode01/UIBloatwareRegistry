@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import sys
-import os
 from device_detector import DeviceDetector
 
 try:
@@ -10,12 +9,10 @@ except ImportError:
     VERSION = "1.0.0"
 
 def main():
-    """Main application entry point"""
     print("Android Bloatware Remover")
     print(f"Version {VERSION}")
     print("=" * 55)
     
-    # Check for test mode argument
     test_mode = '--test' in sys.argv or '-t' in sys.argv
     
     if test_mode:
@@ -40,7 +37,6 @@ def main():
     detector.print_device_info()
     print()
     
-    # Get appropriate remover
     remover = detector.get_supported_remover()
     
     if not remover:
@@ -49,11 +45,9 @@ def main():
         print("More brands will be added in future updates.")
         return
     
-    # Set test mode on remover if needed
     if test_mode:
         remover.test_mode = True
     
-    # Run the remover
     brand_name = device_info.get('detected_brand', 'Unknown').title()
     mode_text = " (TEST MODE)" if test_mode else ""
     print(f"Starting {brand_name} bloatware removal{mode_text}...")
@@ -62,11 +56,12 @@ def main():
     print("Available options:")
     print("1. Interactive removal (recommended for beginners)")
     print("2. List all apps and select what to remove")
-    print("3. Remove all configured packages (advanced users)")
-    print("4. Exit")
+    print("3. Manually remove by package or app name")
+    print("4. Remove all configured packages (advanced users)")
+    print("5. Exit")
     
     while True:
-        choice = input("Select option (1-4): ").strip()
+        choice = input("Select option (1-5): ").strip()
         
         if choice == '1':
             remover.interactive_removal()
@@ -78,6 +73,9 @@ def main():
                 remover.list_all_apps_removal()
             break
         elif choice == '3':
+            remover.manual_package_removal()
+            break
+        elif choice == '4':
             warning_text = "TEST MODE: This will simulate removing" if test_mode else "WARNING: This will remove"
             print(f"{warning_text} ALL configured bloatware packages.")
             if not test_mode:
@@ -91,11 +89,11 @@ def main():
             else:
                 print("Operation cancelled.")
             break
-        elif choice == '4':
+        elif choice == '5':
             print("Exiting...")
             break
         else:
-            print("Invalid choice. Please select 1, 2, 3, or 4.")
+            print("Invalid choice. Please select 1, 2, 3, 4, or 5.")
 
 if __name__ == "__main__":
     main()

@@ -1,24 +1,17 @@
 #!/system/bin/sh
-# Honor Bloatware Remover for Shizuku
-# Remove unwanted pre-installed apps from Honor devices
-# Compatible with Shizuku terminal environment
-# Version: 1.0
 
-# Colors for better visibility (if terminal supports them)
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
-# Function to print colored text
 print_colored() {
     local color=$1
     local text=$2
     printf "${color}${text}${NC}\n"
 }
 
-# Function to print header
 print_header() {
     echo "=================================================="
     print_colored $BLUE "Honor Bloatware Remover for Shizuku"
@@ -30,7 +23,6 @@ print_header() {
     echo ""
 }
 
-# Function to check if we're running in Shizuku environment
 check_environment() {
     if [ -z "$SHIZUKU_SERVER_VERSION" ] && [ "$(id -u)" != "2000" ]; then
         print_colored $RED "Warning: This script is designed for Shizuku environment."
@@ -44,7 +36,6 @@ check_environment() {
     fi
 }
 
-# Function to create backup
 create_backup() {
     print_colored $BLUE "Creating backup of installed packages..."
     BACKUP_FILE="/sdcard/honor_backup_$(date +%Y%m%d_%H%M%S).txt"
@@ -57,7 +48,6 @@ create_backup() {
     fi
 }
 
-# Honor Safe Packages (can be removed without affecting core functionality)
 declare_safe_packages() {
     SAFE_PACKAGES="
 com.hihonor.appmarket:Honor_AppGallery
@@ -98,7 +88,6 @@ com.hihonor.magicui.optimization:System_Optimization
 "
 }
 
-# Honor Caution Packages (may affect some features)
 declare_caution_packages() {
     CAUTION_PACKAGES="
 com.hihonor.android.launcher:Honor_Launcher
@@ -114,7 +103,6 @@ com.hihonor.magicui.assistant:Magic_UI_Assistant
 "
 }
 
-# Honor Dangerous Packages (critical system components)
 declare_dangerous_packages() {
     DANGEROUS_PACKAGES="
 com.hihonor.android.hms:Honor_Mobile_Services
@@ -126,7 +114,6 @@ com.hihonor.systemmanager:System_Manager
 "
 }
 
-# Third-party Safe Packages
 declare_third_party_packages() {
     THIRD_PARTY_PACKAGES="
 com.facebook.katana:Facebook
@@ -141,51 +128,46 @@ com.tripadvisor.tripadvisor:TripAdvisor
 "
 }
 
-# Function to check if package is installed
 is_package_installed() {
     local package=$1
     pm list packages | grep -q "package:$package"
 }
 
-# Function to remove a package
 remove_package() {
     local package=$1
     local description=$2
-    
+
     print_colored $BLUE "Removing: $description ($package)"
-    
-    # Try to uninstall for current user first
+
     pm uninstall --user 0 "$package" 2>/dev/null
     if [ $? -eq 0 ]; then
-        print_colored $GREEN "✓ Successfully removed: $description"
+        print_colored $GREEN "Successfully removed: $description"
         return 0
     fi
-    
-    # If that fails, try disable
+
     pm disable-user --user 0 "$package" 2>/dev/null
     if [ $? -eq 0 ]; then
-        print_colored $YELLOW "✓ Disabled: $description (could not uninstall)"
+        print_colored $YELLOW "Disabled: $description (could not uninstall)"
         return 0
     fi
-    
-    print_colored $RED "✗ Failed to remove: $description"
+
+    print_colored $RED "Failed to remove: $description"
     return 1
 }
 
-# Function to display packages with selection
 show_package_category() {
     local category_name=$1
     local packages=$2
     local risk_color=$3
     local risk_level=$4
-    
+
     echo ""
     print_colored $BLUE "=== $category_name ==="
     echo ""
-    
+
     local count=0
     local installed_packages=""
-    
+
     echo "$packages" | while IFS=: read -r package description; do
         if [ -n "$package" ] && [ -n "$description" ]; then
             if is_package_installed "$package"; then
@@ -197,48 +179,43 @@ show_package_category() {
             fi
         fi
     done
-    
+
     if [ $count -eq 0 ]; then
         print_colored $YELLOW "No packages from this category are currently installed."
     fi
-    
+
     return $count
 }
 
-# Function for interactive removal
 interactive_removal() {
     print_colored $BLUE "Interactive Removal Mode"
     print_colored $YELLOW "Only showing packages that are currently installed on your device"
     echo ""
-    
+
     declare_safe_packages
     declare_caution_packages
     declare_dangerous_packages
     declare_third_party_packages
-    
-    # Show safe packages
+
     show_package_category "SAFE PACKAGES (Can be removed safely)" "$SAFE_PACKAGES" "$GREEN" "SAFE"
     safe_count=$?
-    
-    # Show caution packages
+
     show_package_category "CAUTION PACKAGES (May affect some features)" "$CAUTION_PACKAGES" "$YELLOW" "CAUTION"
     caution_count=$?
-    
-    # Show dangerous packages
+
     show_package_category "DANGEROUS PACKAGES (Critical system components)" "$DANGEROUS_PACKAGES" "$RED" "DANGEROUS"
     dangerous_count=$?
-    
-    # Show third-party packages
+
     show_package_category "THIRD-PARTY PACKAGES (Pre-installed bloatware)" "$THIRD_PARTY_PACKAGES" "$GREEN" "SAFE"
     third_party_count=$?
-    
+
     total_count=$((safe_count + caution_count + dangerous_count + third_party_count))
-    
+
     if [ $total_count -eq 0 ]; then
         print_colored $YELLOW "No bloatware packages found on your device."
         return
     fi
-    
+
     echo ""
     print_colored $BLUE "Found $total_count removable packages"
     echo ""
@@ -249,14 +226,13 @@ interactive_removal() {
     echo "- 'all' to select all SAFE packages only"
     echo "- 'quit' to exit"
     echo ""
-    
+
     read -p "Enter your selection: " selection
-    
+
     if [ "$selection" = "quit" ]; then
         exit 0
     fi
-    
-    # Process selection (simplified for shell)
+
     if [ "$selection" = "all" ]; then
         print_colored $YELLOW "Removing all SAFE packages..."
         remove_safe_packages
@@ -266,14 +242,13 @@ interactive_removal() {
     fi
 }
 
-# Function to remove safe packages
 remove_safe_packages() {
     declare_safe_packages
     declare_third_party_packages
-    
+
     local removed_count=0
     local failed_count=0
-    
+
     print_colored $BLUE "Removing SAFE Honor packages..."
     echo "$SAFE_PACKAGES" | while IFS=: read -r package description; do
         if [ -n "$package" ] && [ -n "$description" ]; then
@@ -286,7 +261,7 @@ remove_safe_packages() {
             fi
         fi
     done
-    
+
     print_colored $BLUE "Removing third-party bloatware..."
     echo "$THIRD_PARTY_PACKAGES" | while IFS=: read -r package description; do
         if [ -n "$package" ] && [ -n "$description" ]; then
@@ -299,21 +274,20 @@ remove_safe_packages() {
             fi
         fi
     done
-    
+
     echo ""
     print_colored $GREEN "Removal completed!"
     echo "Packages processed. Check the output above for detailed results."
 }
 
-# Function for batch removal
 batch_removal() {
     print_colored $RED "BATCH REMOVAL MODE"
     print_colored $YELLOW "This will remove ALL safe Honor bloatware packages at once."
     print_colored $YELLOW "This action cannot be easily undone."
     echo ""
-    
+
     read -p "Are you sure you want to continue? (type 'yes' to confirm): " confirm
-    
+
     if [ "$confirm" = "yes" ]; then
         create_backup
         if [ $? -eq 0 ]; then
@@ -327,24 +301,22 @@ batch_removal() {
     fi
 }
 
-# Function to list all packages
 list_all_packages() {
     print_colored $BLUE "Listing all installed packages on your device..."
     print_colored $YELLOW "This may take a moment..."
     echo ""
-    
+
     pm list packages | sed 's/package://' | sort
-    
+
     echo ""
     print_colored $BLUE "Package listing completed."
     print_colored $YELLOW "To remove specific packages, use: pm uninstall --user 0 <package_name>"
 }
 
-# Main menu
 show_main_menu() {
     print_header
     check_environment
-    
+
     echo "Available options:"
     echo "1. Interactive removal (recommended)"
     echo "2. Batch removal (remove all safe packages)"
@@ -352,9 +324,9 @@ show_main_menu() {
     echo "4. Create backup only"
     echo "5. Exit"
     echo ""
-    
+
     read -p "Select option (1-5): " choice
-    
+
     case $choice in
         1)
             interactive_removal
@@ -379,15 +351,12 @@ show_main_menu() {
     esac
 }
 
-# Script entry point
 main() {
-    # Make sure we have necessary permissions
     if [ "$(id -u)" = "0" ]; then
         print_colored $YELLOW "Running as root. This is normal in Shizuku environment."
     fi
-    
+
     show_main_menu
 }
 
-# Run the script
 main "$@"

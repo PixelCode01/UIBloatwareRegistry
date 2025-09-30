@@ -21,9 +21,9 @@ Shizuku is an Android app that allows you to run ADB commands directly on your d
    - [Google Play Store](https://play.google.com/store/apps/details?id=moe.shizuku.privileged.api)
 
 2. **Enable Developer Options** on your Honor device:
-   - Go to Settings → About Phone
+   - Go to Settings -> About Phone
    - Tap "Build Number" 7 times
-   - Go back to Settings → System & Updates → Developer Options
+   - Go back to Settings -> System & Updates -> Developer Options
    - Enable "USB Debugging"
 
 3. **Activate Shizuku**:
@@ -79,10 +79,10 @@ The script provides several modes:
 ## Safety Features
 
 - **Automatic Backup**: Creates package list backup before removal
-- **Risk Levels**: 
-  - 🟢 **SAFE**: No impact on core functionality
-  - 🟡 **CAUTION**: May affect some features
-  - 🔴 **DANGEROUS**: Critical system components
+- **Risk Levels**:
+   - SAFE: No impact on core functionality
+   - CAUTION: May affect some features
+   - DANGEROUS: Critical system components
 - **Confirmation Prompts**: Prevents accidental removal
 - **Detailed Logging**: Shows exactly what was removed
 
@@ -132,11 +132,11 @@ The script provides several modes:
 
 ## Important Notes
 
-- ⚠️ **Always backup** your device before removing packages
-- 🔄 Some apps may return after Magic UI updates
-- 📱 Test on a secondary device first if possible
-- 🏭 Factory reset will restore all removed applications
-- 🔧 This script is specifically for Honor devices with Magic UI
+- Always back up your device before removing packages
+- Some apps may return after Magic UI updates
+- Test on a secondary device first if possible
+- Factory reset will restore all removed applications
+- This script is specifically for Honor devices with Magic UI
 
 ## What Gets Removed
 

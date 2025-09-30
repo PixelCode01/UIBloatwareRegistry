@@ -61,10 +61,11 @@ See [Honor/SHIZUKU_USAGE.md](Honor/SHIZUKU_USAGE.md) for detailed setup instruct
    - Windows: Download Android SDK Platform Tools, add to PATH
    - Mac: `brew install android-platform-tools`
    - Linux: `sudo apt install android-tools-adb`
+   - Optional: Set the `ADB_PATH` environment variable to the full path of your `adb` binary if it isn't on PATH.
 
 2. **Enable USB Debugging on your phone**
-   - Settings → About Phone → Tap "Build Number" 7 times
-   - Settings → Developer Options → Enable "USB Debugging"
+   - Settings -> About Phone -> Tap "Build Number" 7 times
+   - Settings -> Developer Options -> Enable "USB Debugging"
 
 3. **Get the tool**
    ```bash
@@ -85,17 +86,20 @@ android-bloatware-remover-windows.exe
 ./android-bloatware-remover-macos
 ```
 
+> **Tip:** If the executable cannot find `adb`, place the `platform-tools` folder next to the binary or set the `ADB_PATH` environment variable to the full path of `adb`.
+
 ### Using Python Source
 Connect your phone and run:
 ```bash
 python main.py
 ```
 
-You'll get three options:
+You'll get four options:
 
 1. **Interactive mode** - Shows known bloatware, you pick what to remove
 2. **All apps mode** - Lists every app on your phone, you choose what goes
-3. **Batch mode** - Removes all known bloatware at once (be careful!)
+3. **Manual mode** - Type a package name (`com.android.chrome`) or search by app name (`chrome`)
+4. **Batch mode** - Removes all known bloatware at once (be careful!)
 
 ## Safety features
 

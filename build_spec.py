@@ -1,23 +1,17 @@
 #!/usr/bin/env python3
-"""
-Build script for creating standalone executables
-"""
+"""Build script for creating standalone executables."""
 
-import os
-import sys
 import subprocess
-import shutil
-from pathlib import Path
 
 def run_command(cmd, cwd=None):
-    """Run a command and return success status"""
+    """Run a command and return success status."""
     try:
         result = subprocess.run(cmd, shell=True, cwd=cwd, check=True, 
                               capture_output=True, text=True)
-        print(f"✓ {cmd}")
+        print(f"Command succeeded: {cmd}")
         return True
     except subprocess.CalledProcessError as e:
-        print(f"✗ {cmd}")
+        print(f"Command failed: {cmd}")
         print(f"Error: {e.stderr}")
         return False
 
@@ -28,11 +22,9 @@ import os
 
 block_cipher = None
 
-# Collect all brand directories and their contents
 brand_dirs = ['Samsung', 'Xiaomi', 'Oppo', 'Vivo', 'Realme', 'Tecno', 'OnePlus', 'Huawei', 'Honor', 'Motorola', 'Nothing']
 datas = []
 
-# Add brand directories (only if they exist)
 for brand in brand_dirs:
     if os.path.exists(brand):
         md_files = os.path.join(brand, '*.md')
@@ -40,11 +32,9 @@ for brand in brand_dirs:
         datas.append((md_files, brand + '/'))
         datas.append((py_files, brand + '/'))
 
-# Add core module
 if os.path.exists('core'):
     datas.append(('core/*.py', 'core/'))
 
-# Add other files (only if they exist)
 if os.path.exists('README.md'):
     datas.append(('README.md', '.'))
 if os.path.exists('LICENSE'):
@@ -109,28 +99,25 @@ exe = EXE(
     with open('android-bloatware-remover.spec', 'w') as f:
         f.write(spec_content)
     
-    print("✓ Created PyInstaller spec file")
+    print("Created PyInstaller spec file.")
 
 def build_executable():
     """Build the executable using PyInstaller"""
     print("Building standalone executable...")
     
-    # Install PyInstaller if not present
     if not run_command("pip install pyinstaller"):
         return False
     
-    # Create spec file
     create_spec_file()
     
-    # Build executable
     if not run_command("pyinstaller android-bloatware-remover.spec --clean"):
         return False
     
-    print("✓ Executable built successfully")
+    print("Executable built successfully.")
     return True
 
 def main():
-    """Main build function - just create spec file for GitHub Actions"""
+    """Create the PyInstaller spec file."""
     print("Creating PyInstaller spec file...")
     create_spec_file()
     print("Spec file created successfully!")
