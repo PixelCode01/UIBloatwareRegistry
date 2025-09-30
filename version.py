@@ -1,6 +1,6 @@
 """Version information for Android Bloatware Remover"""
 
-__version__ = "1.0.0"
+__version__ = "1.2.0"
 __author__ = "PixelCode01"
 __description__ = "Android Bloatware Remover - Remove unwanted pre-installed apps"
 __url__ = "https://github.com/PixelCode01/UIBloatwareRegistry"

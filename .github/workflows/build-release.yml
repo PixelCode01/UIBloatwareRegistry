@@ -2,6 +2,8 @@ name: Build and Release
 
 on:
   push:
+    branches:
+      - main
     tags:
       - 'v*'
   workflow_dispatch:
@@ -11,7 +13,42 @@ permissions:
   packages: write
 
 jobs:
+  prepare:
+    name: Prepare release metadata
+    runs-on: ubuntu-latest
+    outputs:
+      tag_name: ${{ steps.meta.outputs.tag_name }}
+      should_release: ${{ steps.meta.outputs.should_release }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Determine release tag
+        id: meta
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            tag_name="${GITHUB_REF##refs/tags/}"
+            echo "tag_name=${tag_name}" >> "$GITHUB_OUTPUT"
+            echo "should_release=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          version=$(python -c "from version import get_version; print(get_version())")
+          tag_name="v${version}"
+          echo "tag_name=${tag_name}" >> "$GITHUB_OUTPUT"
+
+          git fetch --tags --quiet
+          if git show-ref --tags --quiet "refs/tags/${tag_name}"; then
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_release=true" >> "$GITHUB_OUTPUT"
+          fi
+
   build:
+    needs: prepare
+    if: needs.prepare.outputs.should_release == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -28,222 +65,222 @@ jobs:
             asset_name: android-bloatware-remover-macos
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install pyinstaller
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
 
-    - name: Test Python application first
-      run: |
-        echo "Testing Python application..."
-        python main.py --test &
-        sleep 5
-        pkill -f "python main.py" || true
-        echo "Python test completed"
-      shell: bash
+      - name: Test Python application first
+        run: |
+          echo "Testing Python application..."
+          python main.py --test &
+          sleep 5
+          pkill -f "python main.py" || true
+          echo "Python test completed"
+        shell: bash
 
-    - name: Build with PyInstaller (Cross-platform)
-      run: |
-        echo "Building with PyInstaller..."
-        if [ "${{ matrix.os }}" = "windows-latest" ]; then
-          pyinstaller --onefile --console --name android-bloatware-remover main.py \
-            --add-data "core;core" \
-            --add-data "README.md;." \
-            --hidden-import core.bloatware_remover \
-            --hidden-import device_detector \
-            --hidden-import version \
-            --hidden-import Samsung.samsung_remover \
-            --hidden-import Xiaomi.xiaomi_remover \
-            --hidden-import Oppo.oppo_remover \
-            --hidden-import Vivo.vivo_remover \
-            --hidden-import Realme.realme_remover \
-            --hidden-import Tecno.tecno_remover \
-            --hidden-import OnePlus.oneplus_remover \
-            --hidden-import Huawei.huawei_remover \
-            --hidden-import Honor.honor_remover \
-            --hidden-import Motorola.motorola_remover \
-            --hidden-import Nothing.nothing_remover \
-            --clean --noconfirm
-        else
-          pyinstaller --onefile --console --name android-bloatware-remover main.py \
-            --add-data "core:core" \
-            --add-data "README.md:." \
-            --hidden-import core.bloatware_remover \
-            --hidden-import device_detector \
-            --hidden-import version \
-            --hidden-import Samsung.samsung_remover \
-            --hidden-import Xiaomi.xiaomi_remover \
-            --hidden-import Oppo.oppo_remover \
-            --hidden-import Vivo.vivo_remover \
-            --hidden-import Realme.realme_remover \
-            --hidden-import Tecno.tecno_remover \
-            --hidden-import OnePlus.oneplus_remover \
-            --hidden-import Huawei.huawei_remover \
-            --hidden-import Honor.honor_remover \
-            --hidden-import Motorola.motorola_remover \
-            --hidden-import Nothing.nothing_remover \
-            --clean --noconfirm
-        fi
-        echo "Build completed. Checking dist directory:"
-        ls -la dist/
-      shell: bash
-
-    - name: Test executable
-      run: |
-        echo "Testing executable..."
-        if [ "${{ matrix.os }}" = "windows-latest" ]; then
-          if [ -f "dist/android-bloatware-remover.exe" ]; then
-            echo "Windows executable found"
-            timeout 10s dist/android-bloatware-remover.exe --test || echo "Test completed"
+      - name: Build with PyInstaller (Cross-platform)
+        run: |
+          echo "Building with PyInstaller..."
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            pyinstaller --onefile --console --name android-bloatware-remover main.py \
+              --add-data "core;core" \
+              --add-data "README.md;." \
+              --hidden-import core.bloatware_remover \
+              --hidden-import device_detector \
+              --hidden-import version \
+              --hidden-import Samsung.samsung_remover \
+              --hidden-import Xiaomi.xiaomi_remover \
+              --hidden-import Oppo.oppo_remover \
+              --hidden-import Vivo.vivo_remover \
+              --hidden-import Realme.realme_remover \
+              --hidden-import Tecno.tecno_remover \
+              --hidden-import OnePlus.oneplus_remover \
+              --hidden-import Huawei.huawei_remover \
+              --hidden-import Honor.honor_remover \
+              --hidden-import Motorola.motorola_remover \
+              --hidden-import Nothing.nothing_remover \
+              --clean --noconfirm
           else
-            echo "Windows executable not found!"
-            exit 1
+            pyinstaller --onefile --console --name android-bloatware-remover main.py \
+              --add-data "core:core" \
+              --add-data "README.md:." \
+              --hidden-import core.bloatware_remover \
+              --hidden-import device_detector \
+              --hidden-import version \
+              --hidden-import Samsung.samsung_remover \
+              --hidden-import Xiaomi.xiaomi_remover \
+              --hidden-import Oppo.oppo_remover \
+              --hidden-import Vivo.vivo_remover \
+              --hidden-import Realme.realme_remover \
+              --hidden-import Tecno.tecno_remover \
+              --hidden-import OnePlus.oneplus_remover \
+              --hidden-import Huawei.huawei_remover \
+              --hidden-import Honor.honor_remover \
+              --hidden-import Motorola.motorola_remover \
+              --hidden-import Nothing.nothing_remover \
+              --clean --noconfirm
           fi
-        else
-          if [ -f "dist/android-bloatware-remover" ]; then
-            echo "Unix executable found"
-            chmod +x dist/android-bloatware-remover
-            timeout 10s dist/android-bloatware-remover --test || echo "Test completed"
-          else
-            echo "Unix executable not found!"
-            exit 1
-          fi
-        fi
-      shell: bash
+          echo "Build completed. Checking dist directory:"
+          ls -la dist/
+        shell: bash
 
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: ${{ matrix.asset_name }}
-        path: dist/${{ matrix.artifact_name }}
+      - name: Test executable
+        run: |
+          echo "Testing executable..."
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            if [ -f "dist/android-bloatware-remover.exe" ]; then
+              echo "Windows executable found"
+              timeout 10s dist/android-bloatware-remover.exe --test || echo "Test completed"
+            else
+              echo "Windows executable not found!"
+              exit 1
+            fi
+          else
+            if [ -f "dist/android-bloatware-remover" ]; then
+              echo "Unix executable found"
+              chmod +x dist/android-bloatware-remover
+              timeout 10s dist/android-bloatware-remover --test || echo "Test completed"
+            else
+              echo "Unix executable not found!"
+              exit 1
+            fi
+          fi
+        shell: bash
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset_name }}
+          path: dist/${{ matrix.artifact_name }}
 
   release:
-    needs: build
+    needs: [prepare, build]
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
+    if: needs.prepare.outputs.should_release == 'true'
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Download all artifacts
-      uses: actions/download-artifact@v4
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
 
-    - name: List downloaded artifacts
-      run: |
-        echo "Current directory contents:"
-        ls -la
-        echo "Looking for executables:"
-        find . -name "*android-bloatware-remover*" -type f
-        echo "Preparing files for release..."
+      - name: List downloaded artifacts
+        run: |
+          echo "Current directory contents:"
+          ls -la
+          echo "Looking for executables:"
+          find . -name "*android-bloatware-remover*" -type f
+          echo "Preparing files for release..."
 
-    - name: Prepare release files
-      run: |
-        mkdir -p release
-        if [ -f "android-bloatware-remover-windows.exe/android-bloatware-remover.exe" ]; then
-          cp "android-bloatware-remover-windows.exe/android-bloatware-remover.exe" "release/android-bloatware-remover-windows.exe"
-        fi
-        if [ -f "android-bloatware-remover-linux/android-bloatware-remover" ]; then
-          cp "android-bloatware-remover-linux/android-bloatware-remover" "release/android-bloatware-remover-linux"
-        fi
-        if [ -f "android-bloatware-remover-macos/android-bloatware-remover" ]; then
-          cp "android-bloatware-remover-macos/android-bloatware-remover" "release/android-bloatware-remover-macos"
-        fi
-        echo "Release files prepared:"
-        ls -la release/
-
-    - name: Generate file hashes
-      run: |
-        cd release
-        echo "# File Verification Hashes" > HASHES.md
-        echo "" >> HASHES.md
-        echo "Use these SHA256 hashes to verify file integrity:" >> HASHES.md
-        echo "" >> HASHES.md
-        
-        for file in *; do
-          if [ -f "$file" ] && [ "$file" != "HASHES.md" ]; then
-            hash=$(sha256sum "$file" | cut -d' ' -f1)
-            size=$(stat -c%s "$file")
-            echo "**$file**" >> HASHES.md
-            echo "- SHA256: \`$hash\`" >> HASHES.md
-            echo "- Size: $(printf "%'d" $size) bytes" >> HASHES.md
-            echo "" >> HASHES.md
+      - name: Prepare release files
+        run: |
+          mkdir -p release
+          if [ -f "android-bloatware-remover-windows.exe/android-bloatware-remover.exe" ]; then
+            cp "android-bloatware-remover-windows.exe/android-bloatware-remover.exe" "release/android-bloatware-remover-windows.exe"
           fi
-        done
-        
-        echo "## How to verify:" >> HASHES.md
-        echo "" >> HASHES.md
-        echo "**Windows (PowerShell):**" >> HASHES.md
-        echo "\`\`\`powershell" >> HASHES.md
-        echo "Get-FileHash -Algorithm SHA256 android-bloatware-remover-windows.exe" >> HASHES.md
-        echo "\`\`\`" >> HASHES.md
-        echo "" >> HASHES.md
-        echo "**Linux/Mac:**" >> HASHES.md
-        echo "\`\`\`bash" >> HASHES.md
-        echo "sha256sum android-bloatware-remover-linux" >> HASHES.md
-        echo "shasum -a 256 android-bloatware-remover-macos" >> HASHES.md
-        echo "\`\`\`" >> HASHES.md
-        
-        echo "Generated hashes:"
-        cat HASHES.md
+          if [ -f "android-bloatware-remover-linux/android-bloatware-remover" ]; then
+            cp "android-bloatware-remover-linux/android-bloatware-remover" "release/android-bloatware-remover-linux"
+          fi
+          if [ -f "android-bloatware-remover-macos/android-bloatware-remover" ]; then
+            cp "android-bloatware-remover-macos/android-bloatware-remover" "release/android-bloatware-remover-macos"
+          fi
+          echo "Release files prepared:"
+          ls -la release/
 
-    - name: Create Release
-      uses: softprops/action-gh-release@v2
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref_name }}
-        name: Release ${{ github.ref_name }}
-        body: |
-          ## Android Bloatware Remover ${{ github.ref_name }}
-          
-          Standalone executables for Windows, Linux, and macOS.
-          
-          ### Windows Defender False Positive
-          Windows Defender may flag the executable as a virus. This is a **false positive** common with PyInstaller executables. The tool is completely safe - all source code is open and auditable. See [SECURITY.md](https://github.com/PixelCode01/UIBloatwareRegistry/blob/main/SECURITY.md) for details and solutions.
-          
-          ### Download Instructions:
-          - **Windows**: Download `android-bloatware-remover-windows.exe`
-          - **Linux**: Download `android-bloatware-remover-linux`
-          - **macOS**: Download `android-bloatware-remover-macos`
-          - **Verification**: Download `HASHES.md` to verify file integrity
-          
-          ### Usage:
-          1. Download the appropriate executable for your operating system
-          2. Make sure ADB is installed and in your PATH
-          3. Enable USB debugging on your Android device
-          4. Connect your device and run the executable
-          
-          ### Supported Devices:
-          - Samsung (One UI)
-          - Xiaomi/Redmi/POCO (MIUI)
-          - Oppo (ColorOS)
-          - Vivo/iQOO (FunTouch OS)
-          - Realme (Realme UI)
-          - Tecno (HiOS)
-          - OnePlus (OxygenOS)
-          - Huawei (EMUI/HarmonyOS)
-          - Honor (Magic UI)
-          - Motorola (My UX)
-          - Nothing (Nothing OS)
-          
-          ### Test Mode:
-          Run with `--test` flag to try without a connected device.
-          
-          ### Alternative Installation:
-          If you prefer to avoid the executable, run from Python source:
-          ```bash
-          git clone https://github.com/PixelCode01/UIBloatwareRegistry.git
-          cd UIBloatwareRegistry
-          python main.py
-          ```
-        draft: false
-        prerelease: false
-        files: release/*
-        fail_on_unmatched_files: false
+      - name: Generate file hashes
+        run: |
+          cd release
+          echo "# File Verification Hashes" > HASHES.md
+          echo "" >> HASHES.md
+          echo "Use these SHA256 hashes to verify file integrity:" >> HASHES.md
+          echo "" >> HASHES.md
+
+          for file in *; do
+            if [ -f "$file" ] && [ "$file" != "HASHES.md" ]; then
+              hash=$(sha256sum "$file" | cut -d' ' -f1)
+              size=$(stat -c%s "$file")
+              echo "**$file**" >> HASHES.md
+              echo "- SHA256: \`$hash\`" >> HASHES.md
+              printf "- Size: %'d bytes\n" "$size" >> HASHES.md
+              echo "" >> HASHES.md
+            fi
+          done
+
+          echo "## How to verify:" >> HASHES.md
+          echo "" >> HASHES.md
+          echo "**Windows (PowerShell):**" >> HASHES.md
+          echo "\`\`\`powershell" >> HASHES.md
+          echo "Get-FileHash -Algorithm SHA256 android-bloatware-remover-windows.exe" >> HASHES.md
+          echo "\`\`\`" >> HASHES.md
+          echo "" >> HASHES.md
+          echo "**Linux/Mac:**" >> HASHES.md
+          echo "\`\`\`bash" >> HASHES.md
+          echo "sha256sum android-bloatware-remover-linux" >> HASHES.md
+          echo "shasum -a 256 android-bloatware-remover-macos" >> HASHES.md
+          echo "\`\`\`" >> HASHES.md
+
+          echo "Generated hashes:"
+          cat HASHES.md
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ needs.prepare.outputs.tag_name }}
+          name: Release ${{ needs.prepare.outputs.tag_name }}
+          body: |
+            ## Android Bloatware Remover ${{ needs.prepare.outputs.tag_name }}
+
+            Standalone executables for Windows, Linux, and macOS.
+
+            ### Windows Defender False Positive
+            Windows Defender may flag the executable as a virus. This is a **false positive** common with PyInstaller executables. The tool is completely safe - all source code is open and auditable. See [SECURITY.md](https://github.com/PixelCode01/UIBloatwareRegistry/blob/main/SECURITY.md) for details and solutions.
+
+            ### Download Instructions:
+            - **Windows**: Download `android-bloatware-remover-windows.exe`
+            - **Linux**: Download `android-bloatware-remover-linux`
+            - **macOS**: Download `android-bloatware-remover-macos`
+            - **Verification**: Download `HASHES.md` to verify file integrity
+
+            ### Usage:
+            1. Download the appropriate executable for your operating system
+            2. Make sure ADB is installed and in your PATH
+            3. Enable USB debugging on your Android device
+            4. Connect your device and run the executable
+
+            ### Supported Devices:
+            - Samsung (One UI)
+            - Xiaomi/Redmi/POCO (MIUI)
+            - Oppo (ColorOS)
+            - Vivo/iQOO (FunTouch OS)
+            - Realme (Realme UI)
+            - Tecno (HiOS)
+            - OnePlus (OxygenOS)
+            - Huawei (EMUI/HarmonyOS)
+            - Honor (Magic UI)
+            - Motorola (My UX)
+            - Nothing (Nothing OS)
+
+            ### Test Mode:
+            Run with `--test` flag to try without a connected device.
+
+            ### Alternative Installation:
+            If you prefer to avoid the executable, run from Python source:
+            ```bash
+            git clone https://github.com/PixelCode01/UIBloatwareRegistry.git
+            cd UIBloatwareRegistry
+            python main.py
+            ```
+          draft: false
+          prerelease: false
+          files: release/*
+          fail_on_unmatched_files: false
