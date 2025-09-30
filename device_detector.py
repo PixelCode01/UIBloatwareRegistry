@@ -23,7 +23,11 @@ class DeviceDetector:
         'huawei': [r'huawei', r'honor', r'hma', r'lya', r'eva'],
         'honor': [r'honor', r'hry', r'bkl', r'col'],
         'motorola': [r'motorola', r'moto', r'xt\d+'],
-        'nothing': [r'nothing', r'phone']
+        'nothing': [r'nothing', r'phone'],
+        'asus': [r'asus', r'zenfone', r'rog'],
+        'google': [r'google', r'pixel'],
+        'infinix': [r'infinix', r'hot', r'note', r'zero'],
+        'lenovo': [r'lenovo', r'zuk', r'vibe']
     }
     
     def __init__(self, test_mode: bool = False):
@@ -146,7 +150,11 @@ class DeviceDetector:
                 print("9. Honor")
                 print("10. Motorola")
                 print("11. Nothing")
-                choice = input("Select brand for testing (1-11): ").strip()
+                print("12. Asus")
+                print("13. Google Pixel")
+                print("14. Infinix")
+                print("15. Lenovo")
+                choice = input("Select brand for testing (1-15): ").strip()
                 
                 brand_map = {
                     '1': 'samsung',
@@ -159,7 +167,11 @@ class DeviceDetector:
                     '8': 'huawei',
                     '9': 'honor',
                     '10': 'motorola',
-                    '11': 'nothing'
+                    '11': 'nothing',
+                    '12': 'asus',
+                    '13': 'google',
+                    '14': 'infinix',
+                    '15': 'lenovo'
                 }
                 
                 brand = brand_map.get(choice)
@@ -205,6 +217,18 @@ class DeviceDetector:
             elif brand == 'nothing':
                 from Nothing.nothing_remover import NothingRemover
                 remover = NothingRemover(test_mode=self.test_mode)
+            elif brand == 'asus':
+                from Asus.asus_remover import AsusRemover
+                remover = AsusRemover(test_mode=self.test_mode)
+            elif brand == 'google':
+                from Google.google_remover import GoogleRemover
+                remover = GoogleRemover(test_mode=self.test_mode)
+            elif brand == 'infinix':
+                from Infinix.infinix_remover import InfinixRemover
+                remover = InfinixRemover(test_mode=self.test_mode)
+            elif brand == 'lenovo':
+                from Lenovo.lenovo_remover import LenovoRemover
+                remover = LenovoRemover(test_mode=self.test_mode)
             else:
                 print(f"Brand '{brand}' is not yet supported")
                 return None
