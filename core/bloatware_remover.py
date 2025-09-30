@@ -1,4 +1,4 @@
-import subprocess
+﻿import subprocess
 import json
 import os
 import logging
@@ -8,11 +8,15 @@ from abc import ABC, abstractmethod
 from .adb_utils import (
     ADBCommandError,
     ADBNotFoundError,
+    DEFAULT_TCPIP_PORT,
     DeviceSelectionError,
     DeviceState,
+    connect_wifi_device,
     list_devices,
+    pair_device,
     resolve_adb_path,
     run_command,
+    is_wifi_serial,
 )
 
 class BloatwareRemover(ABC):
@@ -24,9 +28,10 @@ class BloatwareRemover(ABC):
         self.test_mode = test_mode
         self.logger = self._setup_logging()
         self.packages = self._load_packages()
-        self._app_name_cache: Dict[str, str] = {}
-        self.adb_path: Optional[str] = None
-        self.device_serial: Optional[str] = None
+        self._app_name_cache = {}
+        self.adb_path = None
+        self.device_serial = None
+        self._last_wifi_endpoint = None
         
     def _setup_logging(self) -> logging.Logger:
         """Setup logging configuration"""
@@ -58,59 +63,130 @@ class BloatwareRemover(ABC):
         pass
     
     def check_device_connection(self) -> bool:
-        """Check if device is connected via ADB"""
-        if self.test_mode:
-            print("Running in test mode - skipping device connection check")
-            return True
+        """Check if a device is connected via ADB, retrying as needed."""
 
-        try:
-            adb_path = self._ensure_adb_path()
-        except ADBNotFoundError as exc:
-            print(str(exc))
-            return self._prompt_enable_test_mode()
+        while True:
+            if self.test_mode:
+                print("Running in test mode - skipping device connection check")
+                return True
 
-        try:
-            devices = list_devices(adb_path)
-        except ADBCommandError as exc:
-            self.logger.error("Failed to query devices: %s", exc)
-            print("Failed to communicate with adb. Ensure the platform tools are installed and try again.")
-            return self._prompt_enable_test_mode()
-
-        if not devices:
-            print("No devices connected. Please connect your device and enable USB debugging.")
-            return self._prompt_enable_test_mode()
-
-        authorized = [device for device in devices if device.state == 'device']
-        unauthorized = [device for device in devices if device.state != 'device']
-
-        if unauthorized:
-            print("Detected devices that are not ready:")
-            for device in unauthorized:
-                print(f"  - {device.summary()}")
-            print("Unlock your device and accept the USB debugging prompt, then try again.")
-
-        if self.device_serial:
-            for device in authorized:
-                if device.serial == self.device_serial:
+            try:
+                adb_path = self._ensure_adb_path()
+            except ADBNotFoundError as exc:
+                print(str(exc))
+                decision = self._prompt_enable_test_mode()
+                if decision == 'test':
                     return True
-            print("Previously selected device is no longer connected. Please select a device again.")
-            self.device_serial = None
+                if decision == 'quit':
+                    return False
+                continue
 
-        if not authorized:
-            return self._prompt_enable_test_mode()
+            try:
+                devices = list_devices(adb_path)
+            except ADBCommandError as exc:
+                self.logger.error("Failed to query devices: %s", exc)
+                print("\nADB could not communicate with the device.")
+                print("Please make sure Developer options and USB debugging are enabled, then reconnect the cable.")
+                print("  ÔÇó Enable Developer options: Settings ÔåÆ About phone ÔåÆ tap 'Build number' seven times.")
+                print("  ÔÇó Enable USB debugging: Settings ÔåÆ System ÔåÆ Developer options ÔåÆ toggle USB debugging on.")
+                print("  ÔÇó Reconnect the device and accept the USB debugging prompt if shown.")
+                if self._prompt_wifi_connection("Attempt to connect over Wi-Fi ADB instead?"):
+                    continue
+                action = self._prompt_connection_retry()
+                if action == "retry":
+                    continue
+                if action == "test":
+                    decision = self._prompt_enable_test_mode()
+                    if decision == 'test':
+                        return True
+                    if decision == 'quit':
+                        return False
+                    continue
+                return False
 
-        selected_device = self._select_device(authorized)
-        if selected_device:
-            self.device_serial = selected_device.serial
-            return True
+            if not devices:
+                print("\nNo devices detected.")
+                print("Connect your phone and enable USB debugging:")
+                print("  1. Unlock the device and connect it via USB.")
+                print("  2. If Developer options aren't visible, enable them by tapping 'Build number' seven times.")
+                print("  3. Open Developer options and enable USB debugging.")
+                print("  4. Confirm the 'Allow USB debugging' prompt on the device.")
+                if self._prompt_wifi_connection("Would you like to try Wi-Fi debugging instead?"):
+                    continue
+                action = self._prompt_connection_retry()
+                if action == "retry":
+                    continue
+                if action == "test":
+                    decision = self._prompt_enable_test_mode()
+                    if decision == 'test':
+                        return True
+                    if decision == 'quit':
+                        return False
+                    continue
+                return False
 
-        return False
+            authorized = [device for device in devices if device.state == 'device']
+            pending = [device for device in devices if device.state != 'device']
+
+            if pending:
+                print("\nDetected devices that still need attention:")
+                for device in pending:
+                    self._show_device_state_instructions(device)
+                if self._prompt_wifi_connection("Switch to Wi-Fi debugging?"):
+                    continue
+                action = self._prompt_connection_retry()
+                if action == "retry":
+                    continue
+                if action == "test":
+                    decision = self._prompt_enable_test_mode()
+                    if decision == 'test':
+                        return True
+                    if decision == 'quit':
+                        return False
+                    continue
+                return False
+
+            if self.device_serial:
+                for device in authorized:
+                    if device.serial == self.device_serial:
+                        return True
+                print("Previously selected device is no longer connected. Please select a device again.")
+                self.device_serial = None
+
+            if not authorized:
+                print("No authorised devices were detected after reconnection attempts.")
+                if self._prompt_wifi_connection("Try connecting via Wi-Fi ADB?"):
+                    continue
+                decision = self._prompt_enable_test_mode()
+                if decision == 'test':
+                    return True
+                if decision == 'quit':
+                    return False
+                continue
+
+            selected_device = self._select_device(authorized)
+            if selected_device:
+                self.device_serial = selected_device.serial
+                return True
+
+            print("Device selection cancelled. You can resolve the issue and try again.")
+            action = self._prompt_connection_retry()
+            if action == "retry":
+                continue
+            if action == "test":
+                decision = self._prompt_enable_test_mode()
+                if decision == 'test':
+                    return True
+                if decision == 'quit':
+                    return False
+                continue
+            return False
     
     def get_installed_packages(self) -> List[str]:
         """Get list of installed packages on device"""
         if self.test_mode:
             return self._get_all_packages()
-        
+
         if not self.device_serial and not self.check_device_connection():
             return []
 
@@ -491,6 +567,8 @@ class BloatwareRemover(ABC):
             self.adb_path = adb_path
         if device_serial:
             self.device_serial = device_serial
+            if is_wifi_serial(device_serial):
+                self._last_wifi_endpoint = device_serial
 
     def _ensure_adb_path(self) -> str:
         """Resolve and cache the adb executable path."""
@@ -501,15 +579,148 @@ class BloatwareRemover(ABC):
         self.adb_path = resolve_adb_path()
         return self.adb_path
 
-    def _prompt_enable_test_mode(self) -> bool:
-        """Ask the user if they want to continue in test mode."""
+    def _prompt_enable_test_mode(self) -> str:
+        """Ask the user for the next step after a connection failure.
 
-        choice = input("Do you want to run in test mode anyway? (y/n): ").lower().strip()
-        if choice == 'y':
-            print("Continuing in test mode - no actual changes will be made")
-            self.test_mode = True
-            return True
-        return False
+        Returns one of 'test', 'retry', or 'quit'."""
+
+        while True:
+            choice = input(
+                "Do you want to run in test mode anyway? (y/n or 'quit' to cancel): "
+            ).lower().strip()
+
+            if choice in {'y', 'yes'}:
+                print("Continuing in test mode - no actual changes will be made")
+                self.test_mode = True
+                return 'test'
+
+            if choice in {'n', 'no'}:
+                print("Okay, we'll keep trying with the connected device.")
+                return 'retry'
+
+            if choice in {'quit', 'q', 'exit', 'cancel'}:
+                print("Cancelling device operations.")
+                return 'quit'
+
+            print("Please respond with 'y', 'n', or type 'quit' to cancel.")
+
+    def _prompt_connection_retry(self) -> str:
+        """Prompt the user to retry, switch to test mode, or cancel connection attempts."""
+
+        while True:
+            response = (
+                input("Type 'retry' once the issue is fixed, 'test' to continue in test mode, or 'quit' to cancel: ")
+                .strip()
+                .lower()
+            )
+            if response in {'retry', 'r', 'yes', 'y'}:
+                return 'retry'
+            if response in {'test', 't'}:
+                return 'test'
+            if response in {'quit', 'q', 'exit', 'cancel'}:
+                return 'quit'
+            print("Invalid option. Please type 'retry', 'test', or 'quit'.")
+
+    def _prompt_wifi_connection(self, message: str) -> bool:
+        while True:
+            reply = input(f"{message} (y/n): ").strip().lower()
+            if reply in {'y', 'yes'}:
+                return self._connect_via_wifi()
+            if reply in {'n', 'no', 'skip', 's'}:
+                return False
+            print("Please answer with 'y' or 'n'.")
+
+    def _connect_via_wifi(self) -> bool:
+        try:
+            adb_path = self._ensure_adb_path()
+        except ADBNotFoundError as exc:
+            print(str(exc))
+            return False
+
+        default_host = self._last_wifi_endpoint or ""
+        prompt = "Enter the device IP address (append :port if not using 5555): "
+        if default_host:
+            prompt = f"Enter the device IP address (press Enter for {default_host}): "
+
+        endpoint = input(prompt).strip()
+        if not endpoint and default_host:
+            endpoint = default_host
+
+        if not endpoint:
+            print("No address provided. Skipping Wi-Fi connection.")
+            return False
+
+        if ':' not in endpoint:
+            endpoint = f"{endpoint}:{DEFAULT_TCPIP_PORT}"
+
+        needs_pairing = None
+        while needs_pairing is None:
+            decision = input("Does the device display a pairing code? (y/n): ").strip().lower()
+            if decision in {'y', 'yes'}:
+                needs_pairing = True
+            elif decision in {'n', 'no'}:
+                needs_pairing = False
+            else:
+                print("Please answer with 'y' or 'n'.")
+
+        if needs_pairing:
+            pair_host = input(
+                "Enter the pairing IP:port shown on the device (leave blank to reuse the same host): "
+            ).strip()
+            if not pair_host:
+                pair_host = endpoint
+
+            pairing_code = input("Enter the six-digit pairing code: ").strip()
+            if not pairing_code:
+                print("Pairing code missing. Cannot continue with Wi-Fi pairing.")
+                return False
+
+            try:
+                pair_device(adb_path, pair_host, pairing_code)
+                print(f"Paired with {pair_host}.")
+            except ADBCommandError as exc:
+                print("Failed to pair with the device.")
+                if exc.stderr:
+                    print(exc.stderr.strip())
+                return False
+
+        try:
+            device = connect_wifi_device(adb_path, endpoint)
+        except ADBCommandError as exc:
+            print("Failed to connect over Wi-Fi.")
+            if exc.stderr:
+                print(exc.stderr.strip())
+            return False
+        except DeviceSelectionError as exc:
+            print("Connected but the device did not appear in the adb list.")
+            if exc.devices:
+                print("Currently visible devices:")
+                for device_state in exc.devices:
+                    print(f"  - {device_state.summary()}")
+            return False
+
+        self.adb_path = adb_path
+        self.device_serial = device.serial
+        self._last_wifi_endpoint = endpoint
+        print(f"Connected to {device.summary()} over Wi-Fi.")
+        return True
+
+    def _show_device_state_instructions(self, device: DeviceState) -> None:
+        """Display guidance for resolving common device connection states."""
+
+        print(f"  - {device.summary()}")
+        state = device.state.lower().strip()
+
+        if state == 'unauthorized':
+            print("    ÔÇó Unlock the device and ensure USB debugging is enabled in Developer options.")
+            print("    ÔÇó When prompted, tap 'Allow' to trust this computer for USB debugging.")
+        elif state == 'offline':
+            print("    ÔÇó Reconnect the USB cable and toggle USB debugging off and on again.")
+            print("    ÔÇó Ensure the device screen stays awake and unlocked.")
+        elif state == 'recovery':
+            print("    ÔÇó The device is in recovery mode. Boot into Android before running the remover.")
+        else:
+            print("    ÔÇó Check the USB connection and confirm the device is unlocked with USB debugging enabled.")
 
     def _select_device(self, authorized_devices: List[DeviceState]) -> Optional[DeviceState]:
         """Select a device from the authorised list, prompting when needed."""

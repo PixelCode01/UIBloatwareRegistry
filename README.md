@@ -1,6 +1,6 @@
 # Android Bloatware Remover
 
-Remove unwanted pre-installed apps from your Android phone without root access. Works with Samsung, Xiaomi, Oppo, Vivo, Realme, Tecno, and OnePlus devices.
+Remove unwanted pre-installed apps from your Android phone without root access. Works with Samsung, Xiaomi, Oppo, Vivo, Realme, Tecno, OnePlus, Huawei, Honor, Motorola, and Nothing devices.
 
 ## What it does
 
@@ -100,6 +100,14 @@ You'll get four options:
 2. **All apps mode** - Lists every app on your phone, you choose what goes
 3. **Manual mode** - Type a package name (`com.android.chrome`) or search by app name (`chrome`)
 4. **Batch mode** - Removes all known bloatware at once (be careful!)
+
+### Connecting over Wi-Fi
+
+- Start the tool with Wi-Fi prompts: `python main.py --wifi`
+- Provide everything non-interactively with `--wifi-endpoint`, `--wifi-pair`, and `--wifi-code`
+- Enable wireless debugging on a cabled device using `python main.py --enable-tcpip`
+
+See [WIFI_ADB_GUIDE.md](WIFI_ADB_GUIDE.md) for a complete walk-through, pairing reminders, and troubleshooting tips.
 
 ## Safety features
 
