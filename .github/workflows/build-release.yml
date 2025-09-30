@@ -209,7 +209,7 @@ jobs:
               size=$(stat -c%s "$file")
               echo "**$file**" >> HASHES.md
               echo "- SHA256: \`$hash\`" >> HASHES.md
-              printf "- Size: %'d bytes\n" "$size" >> HASHES.md
+              printf -- "- Size: %s bytes\n" "$size" >> HASHES.md
               echo "" >> HASHES.md
             fi
           done
