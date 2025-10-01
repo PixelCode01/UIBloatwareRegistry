@@ -87,9 +87,9 @@ class BloatwareRemover(ABC):
                 self.logger.error("Failed to query devices: %s", exc)
                 print("\nADB could not communicate with the device.")
                 print("Please make sure Developer options and USB debugging are enabled, then reconnect the cable.")
-                print("  ÔÇó Enable Developer options: Settings ÔåÆ About phone ÔåÆ tap 'Build number' seven times.")
-                print("  ÔÇó Enable USB debugging: Settings ÔåÆ System ÔåÆ Developer options ÔåÆ toggle USB debugging on.")
-                print("  ÔÇó Reconnect the device and accept the USB debugging prompt if shown.")
+                print("   Enable Developer options: Settings  About phone  tap 'Build number' seven times.")
+                print("   Enable USB debugging: Settings  System  Developer options  toggle USB debugging on.")
+                print("   Reconnect the device and accept the USB debugging prompt if shown.")
                 if self._prompt_wifi_connection("Attempt to connect over Wi-Fi ADB instead?"):
                     continue
                 action = self._prompt_connection_retry()
@@ -712,15 +712,15 @@ class BloatwareRemover(ABC):
         state = device.state.lower().strip()
 
         if state == 'unauthorized':
-            print("    ÔÇó Unlock the device and ensure USB debugging is enabled in Developer options.")
-            print("    ÔÇó When prompted, tap 'Allow' to trust this computer for USB debugging.")
+            print("     Unlock the device and ensure USB debugging is enabled in Developer options.")
+            print("     When prompted, tap 'Allow' to trust this computer for USB debugging.")
         elif state == 'offline':
-            print("    ÔÇó Reconnect the USB cable and toggle USB debugging off and on again.")
-            print("    ÔÇó Ensure the device screen stays awake and unlocked.")
+            print("     Reconnect the USB cable and toggle USB debugging off and on again.")
+            print("     Ensure the device screen stays awake and unlocked.")
         elif state == 'recovery':
-            print("    ÔÇó The device is in recovery mode. Boot into Android before running the remover.")
+            print("     The device is in recovery mode. Boot into Android before running the remover.")
         else:
-            print("    ÔÇó Check the USB connection and confirm the device is unlocked with USB debugging enabled.")
+            print("     Check the USB connection and confirm the device is unlocked with USB debugging enabled.")
 
     def _select_device(self, authorized_devices: List[DeviceState]) -> Optional[DeviceState]:
         """Select a device from the authorised list, prompting when needed."""
@@ -927,3 +927,4 @@ class BloatwareRemover(ABC):
                     return
             else:
                 print("Removal cancelled for the selected apps.")
+

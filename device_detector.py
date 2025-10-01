@@ -1,4 +1,4 @@
-import re
+﻿import re
 from typing import Optional, List
 
 from core.adb_utils import (
