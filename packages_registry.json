@@ -1,0 +1,276 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Centralized bloatware package registry for all Android device brands",
+  "version": "1.0.0",
+  "brands": {
+    "samsung": {
+      "name": "Samsung",
+      "categories": {
+        "bixby": {
+          "name": "Bixby Services",
+          "description": "Samsung's virtual assistant and related services",
+          "packages": [
+            {
+              "name": "com.samsung.android.bixby.wakeup",
+              "description": "Bixby wake up service",
+              "risk": "safe"
+            },
+            {
+              "name": "com.samsung.android.app.spage",
+              "description": "Bixby homepage launcher",
+              "risk": "safe"
+            },
+            {
+              "name": "com.samsung.android.app.routines",
+              "description": "Bixby Routines",
+              "risk": "safe"
+            },
+            {
+              "name": "com.samsung.android.bixby.service",
+              "description": "Bixby features",
+              "risk": "safe"
+            },
+            {
+              "name": "com.samsung.android.visionintelligence",
+              "description": "Bixby Vision",
+              "risk": "safe"
+            },
+            {
+              "name": "com.samsung.android.bixby.agent",
+              "description": "Bixby Voice",
+              "risk": "safe"
+            }
+          ]
+        },
+        "samsung_apps": {
+          "name": "Samsung Apps",
+          "description": "Samsung's built-in applications",
+          "packages": [
+            {
+              "name": "com.samsung.android.messaging",
+              "description": "Samsung Messages",
+              "risk": "caution"
+            },
+            {
+              "name": "com.sec.android.app.sbrowser",
+              "description": "Samsung Internet",
+              "risk": "caution"
+            },
+            {
+              "name": "com.samsung.android.email.provider",
+              "description": "Samsung Email",
+              "risk": "safe"
+            },
+            {
+              "name": "com.samsung.android.calendar",
+              "description": "Samsung Calendar",
+              "risk": "caution"
+            },
+            {
+              "name": "com.sec.android.app.voicenote",
+              "description": "Voice Recorder",
+              "risk": "safe"
+            },
+            {
+              "name": "com.sec.android.app.popupcalculator",
+              "description": "Samsung Calculator",
+              "risk": "caution"
+            }
+          ]
+        },
+        "samsung_services": {
+          "name": "Samsung Services",
+          "description": "Samsung cloud and ecosystem services",
+          "packages": [
+            {
+              "name": "com.samsung.android.scloud",
+              "description": "Samsung Cloud",
+              "risk": "safe"
+            },
+            {
+              "name": "com.samsung.android.oneconnect",
+              "description": "SmartThings",
+              "risk": "safe"
+            },
+            {
+              "name": "com.samsung.android.voc",
+              "description": "Samsung Members",
+              "risk": "safe"
+            },
+            {
+              "name": "com.samsung.ecomm.global",
+              "description": "Samsung Shop",
+              "risk": "safe"
+            },
+            {
+              "name": "com.samsung.android.spay",
+              "description": "Samsung Pay",
+              "risk": "dangerous"
+            },
+            {
+              "name": "com.samsung.android.samsungpass",
+              "description": "Samsung Pass",
+              "risk": "caution"
+            }
+          ]
+        },
+        "carrier_bloat": {
+          "name": "Carrier Apps",
+          "description": "Pre-installed carrier applications",
+          "packages": [
+            {
+              "name": "com.vzw.hss.myverizon",
+              "description": "My Verizon",
+              "risk": "safe"
+            },
+            {
+              "name": "com.att.myWireless",
+              "description": "myAT&T",
+              "risk": "safe"
+            },
+            {
+              "name": "com.samsung.vvm",
+              "description": "Visual Voicemail",
+              "risk": "caution"
+            }
+          ]
+        },
+        "google_apps": {
+          "name": "Google Apps",
+          "description": "Pre-installed Google applications",
+          "packages": [
+            {
+              "name": "com.google.android.apps.docs",
+              "description": "Google Docs",
+              "risk": "safe"
+            },
+            {
+              "name": "com.google.android.apps.maps",
+              "description": "Google Maps",
+              "risk": "caution"
+            },
+            {
+              "name": "com.google.android.apps.photos",
+              "description": "Google Photos",
+              "risk": "safe"
+            },
+            {
+              "name": "com.google.android.gm",
+              "description": "Gmail",
+              "risk": "caution"
+            },
+            {
+              "name": "com.google.android.music",
+              "description": "Google Play Music",
+              "risk": "safe"
+            },
+            {
+              "name": "com.google.android.youtube",
+              "description": "YouTube",
+              "risk": "caution"
+            }
+          ]
+        }
+      }
+    },
+    "xiaomi": {
+      "name": "Xiaomi",
+      "categories": {
+        "miui_apps": {
+          "name": "MIUI Apps",
+          "description": "Xiaomi's MIUI system applications",
+          "packages": [
+            {
+              "name": "com.mi.android.globalFileexplorer",
+              "description": "Mi File Manager",
+              "risk": "caution"
+            },
+            {
+              "name": "com.mi.android.globallauncher",
+              "description": "Mi Launcher",
+              "risk": "dangerous"
+            },
+            {
+              "name": "com.mi.android.globalpersonalassistant",
+              "description": "Mi Assistant",
+              "risk": "safe"
+            },
+            {
+              "name": "com.mi.globalTrendNews",
+              "description": "Mi News",
+              "risk": "safe"
+            },
+            {
+              "name": "com.mi.health",
+              "description": "Mi Health",
+              "risk": "safe"
+            }
+          ]
+        },
+        "google_apps": {
+          "name": "Google Apps",
+          "description": "Pre-installed Google applications",
+          "packages": [
+            {
+              "name": "com.google.android.apps.docs",
+              "description": "Google Docs",
+              "risk": "safe"
+            },
+            {
+              "name": "com.google.android.apps.maps",
+              "description": "Google Maps",
+              "risk": "caution"
+            },
+            {
+              "name": "com.google.android.apps.photos",
+              "description": "Google Photos",
+              "risk": "safe"
+            },
+            {
+              "name": "com.google.android.apps.meetings",
+              "description": "Google Meet",
+              "risk": "safe"
+            },
+            {
+              "name": "com.google.android.gm",
+              "description": "Gmail",
+              "risk": "caution"
+            },
+            {
+              "name": "com.google.android.music",
+              "description": "Google Play Music",
+              "risk": "safe"
+            },
+            {
+              "name": "com.google.android.youtube",
+              "description": "YouTube",
+              "risk": "caution"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "risk_levels": {
+    "safe": {
+      "description": "Safe to remove - No system functionality will be affected",
+      "color": "green",
+      "recommendation": "Can be removed without concerns"
+    },
+    "caution": {
+      "description": "Exercise caution - May affect some functionality",
+      "color": "yellow",
+      "recommendation": "Remove only if you don't use this feature"
+    },
+    "dangerous": {
+      "description": "Dangerous to remove - May cause system instability",
+      "color": "red",
+      "recommendation": "Do NOT remove unless you know what you're doing"
+    },
+    "unknown": {
+      "description": "Unknown risk level - Not yet categorized",
+      "color": "gray",
+      "recommendation": "Research before removing"
+    }
+  }
+}
