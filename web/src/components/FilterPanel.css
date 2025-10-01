@@ -1,0 +1,109 @@
+.filter-panel {
+  background: var(--surface);
+  border-radius: 8px;
+  padding: 1.5rem;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+.filter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.filter-header h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.clear-filters {
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.clear-filters:hover {
+  background: rgba(37, 99, 235, 0.1);
+}
+
+.filter-section {
+  margin-bottom: 1.5rem;
+}
+
+.filter-section:last-child {
+  margin-bottom: 0;
+}
+
+.filter-section h4 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.filter-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.filter-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.filter-checkbox:hover {
+  background: var(--background);
+}
+
+.filter-checkbox input[type="checkbox"] {
+  cursor: pointer;
+}
+
+.filter-checkbox span {
+  font-size: 0.9rem;
+}
+
+.risk-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.risk-safe {
+  background: var(--risk-safe);
+  color: white;
+}
+
+.risk-caution {
+  background: var(--risk-medium);
+  color: white;
+}
+
+.risk-dangerous {
+  background: var(--risk-high);
+  color: white;
+}
+
+.risk-unknown {
+  background: var(--secondary-color);
+  color: white;
+}
