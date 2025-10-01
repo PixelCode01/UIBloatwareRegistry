@@ -1,30 +1,21 @@
 #!/usr/bin/env python3
-"""
-Package Contribution Tool
-
-This tool helps contributors easily add, update, or remove bloatware packages
-from the registry without needing to edit multiple files.
-"""
+"""Package Contribution Tool"""
 
 import sys
 import argparse
 from pathlib import Path
 from typing import Optional
 
-# Add parent directory to path to import core modules
 sys.path.insert(0, str(Path(__file__).parent))
 
 from core.package_registry import PackageRegistry
 
 
 class ContributionTool:
-    """Interactive tool for contributing to the bloatware registry"""
-    
     def __init__(self):
         self.registry = PackageRegistry()
     
     def run_interactive(self):
-        """Run the tool in interactive mode"""
         print("=" * 60)
         print("Bloatware Package Contribution Tool")
         print("=" * 60)
@@ -62,12 +53,10 @@ class ContributionTool:
                 print("Invalid choice. Please try again.")
     
     def add_package_interactive(self):
-        """Interactive package addition"""
         print("\n" + "=" * 60)
         print("Add New Package")
         print("=" * 60)
         
-        # Select brand
         brands = self.registry.get_brands()
         print("\nAvailable brands:")
         for i, brand in enumerate(brands, 1):
@@ -92,7 +81,6 @@ class ContributionTool:
             print("Invalid input.")
             return
         
-        # Select or create category
         categories = self.registry.get_brand_categories(brand)
         if categories:
             print(f"\nAvailable categories for {brand}:")
@@ -121,7 +109,6 @@ class ContributionTool:
             print("Category cannot be empty.")
             return
         
-        # Get package details
         print("\n" + "-" * 60)
         print("Package Information")
         print("-" * 60)
@@ -131,10 +118,9 @@ class ContributionTool:
             print("Package name cannot be empty.")
             return
         
-        # Check for duplicates
         existing = self.registry.get_package_info(brand, package_name)
         if existing:
-            print(f"\n⚠️  Warning: Package '{package_name}' already exists for {brand}!")
+            print(f"\nWarning: Package '{package_name}' already exists for {brand}!")
             print(f"Current info: {existing}")
             if input("Do you want to update it instead? (y/n): ").strip().lower() != 'y':
                 return
@@ -146,7 +132,6 @@ class ContributionTool:
             print("Description cannot be empty.")
             return
         
-        # Show risk level guidelines
         print("\n" + "-" * 60)
         print("Risk Level Guidelines:")
         self.view_risk_guidelines()
@@ -168,7 +153,6 @@ class ContributionTool:
             print("Invalid input.")
             return
         
-        # Add the package
         package_data = {
             'name': package_name,
             'description': description,
@@ -188,13 +172,13 @@ class ContributionTool:
         if input("\nConfirm addition? (y/n): ").strip().lower() == 'y':
             if self.registry.add_package(brand, category, package_data):
                 self.registry.save_registry()
-                print("\n✅ Package added successfully!")
+                print("\nPackage added successfully!")
                 print("\nNext steps:")
                 print("1. Test the package removal on a device")
                 print("2. Commit your changes")
                 print("3. Create a pull request")
             else:
-                print("\n❌ Failed to add package.")
+                print("\nFailed to add package.")
         else:
             print("\nAddition cancelled.")
     
@@ -230,7 +214,7 @@ class ContributionTool:
         # Get current package info
         current = self.registry.get_package_info(brand, package_name)
         if not current:
-            print(f"\n❌ Package '{package_name}' not found for {brand}.")
+            print(f"\nPackage '{package_name}' not found for {brand}.")
             return
         
         print("\nCurrent package information:")
@@ -254,7 +238,7 @@ class ContributionTool:
         risk_levels = list(self.registry.get_all_risk_levels().keys())
         print("\nAvailable risk levels:")
         for i, risk in enumerate(risk_levels, 1):
-            marker = "✓" if risk == current.get('risk') else " "
+            marker = "*" if risk == current.get('risk') else " "
             print(f"{i}. [{marker}] {risk}")
         
         new_risk_input = input(f"\nRisk level number [current: {current.get('risk')}]: ").strip()
@@ -280,9 +264,9 @@ class ContributionTool:
         if input("\nConfirm update? (y/n): ").strip().lower() == 'y':
             if self.registry.update_package(brand, package_name, updates):
                 self.registry.save_registry()
-                print("\n✅ Package updated successfully!")
+                print("\nPackage updated successfully!")
             else:
-                print("\n❌ Failed to update package.")
+                print("\nFailed to update package.")
         else:
             print("\nUpdate cancelled.")
     
@@ -315,7 +299,7 @@ class ContributionTool:
         # Check if package exists
         current = self.registry.get_package_info(brand, package_name)
         if not current:
-            print(f"\n❌ Package '{package_name}' not found for {brand}.")
+            print(f"\nPackage '{package_name}' not found for {brand}.")
             return
         
         print("\nPackage to remove:")
@@ -324,12 +308,12 @@ class ContributionTool:
         print(f"Risk: {current.get('risk')}")
         print(f"Category: {current.get('category')}")
         
-        if input("\n⚠️  Confirm removal? (type 'yes' to confirm): ").strip().lower() == 'yes':
+        if input("\nConfirm removal? (type 'yes' to confirm): ").strip().lower() == 'yes':
             if self.registry.remove_package(brand, package_name):
                 self.registry.save_registry()
-                print("\n✅ Package removed successfully!")
+                print("\nPackage removed successfully!")
             else:
-                print("\n❌ Failed to remove package.")
+                print("\nFailed to remove package.")
         else:
             print("\nRemoval cancelled.")
     
@@ -399,20 +383,20 @@ class ContributionTool:
         
         if self.registry.add_package(brand, category, package_data):
             self.registry.save_registry()
-            print(f"✅ Successfully added {package_name} to {brand}/{category}")
+            print(f"Successfully added {package_name} to {brand}/{category}")
             return True
         else:
-            print(f"❌ Failed to add {package_name}")
+            print(f"Failed to add {package_name}")
             return False
     
     def remove_package_cli(self, brand: str, package_name: str):
         """Remove package via command line arguments"""
         if self.registry.remove_package(brand, package_name):
             self.registry.save_registry()
-            print(f"✅ Successfully removed {package_name} from {brand}")
+            print(f"Successfully removed {package_name} from {brand}")
             return True
         else:
-            print(f"❌ Failed to remove {package_name}")
+            print(f"Failed to remove {package_name}")
             return False
 
 

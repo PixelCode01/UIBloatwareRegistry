@@ -98,13 +98,36 @@ class DeviceDetector:
             unauthorized = [device for device in devices if device.state != 'device']
 
             if unauthorized:
-                print("Detected devices that are not ready:")
-                for device in unauthorized:
-                    print(f"  - {device.summary()}")
-                print("Unlock your device and accept the USB debugging prompt, then try again.")
-                if self._prompt_wifi_connection("Switch to Wi-Fi debugging?"):
-                    continue
-
+                # Separate offline Wi-Fi devices from other unauthorized devices
+                offline_wifi = [d for d in unauthorized if d.state == 'offline' and is_wifi_serial(d.serial)]
+                other_unauthorized = [d for d in unauthorized if d not in offline_wifi]
+                
+                # If we have authorized devices and offline Wi-Fi devices, just skip the offline ones
+                if authorized and offline_wifi:
+                    print("Note: Some stale Wi-Fi connections detected and will be ignored.")
+                    # Don't prompt to switch - we have working devices
+                elif offline_wifi and not other_unauthorized:
+                    print("Detected Wi-Fi device(s) that need authorization:")
+                    for device in offline_wifi:
+                        print(f"  - {device.summary()}")
+                    print("\nOn your device:")
+                    print("   1. Unlock the screen if locked")
+                    print("   2. Look for 'Allow USB debugging?' popup and tap 'Allow'")
+                    print("   3. If no popup appears, disable and re-enable 'Wireless debugging'")
+                    print("\nWait a moment, then type 'retry' to continue.")
+                    
+                    if self._prompt_wifi_connection("Switch to Wi-Fi debugging?"):
+                        continue
+                elif unauthorized:
+                    print("Detected devices that are not ready:")
+                    for device in unauthorized:
+                        print(f"  - {device.summary()}")
+                    print("Unlock your device and accept the USB debugging prompt, then try again.")
+                    
+                    if self._prompt_wifi_connection("Switch to Wi-Fi debugging?"):
+                        continue
+            
+            # If we have authorized devices, proceed with selection even if some are unauthorized
             if not authorized:
                 if self._prompt_wifi_connection("No authorised devices detected. Try Wi-Fi ADB?"):
                     continue
@@ -427,12 +450,28 @@ class DeviceDetector:
 
     def _prompt_wifi_connection(self, prompt: str) -> bool:
         while True:
-            answer = input(f"{prompt} (y/n): ").strip().lower()
+            answer = input(f"{prompt} (y/n/t for test): ").strip().lower()
             if answer in {'y', 'yes'}:
                 return self._connect_via_wifi()
+            if answer in {'t', 'test'}:
+                self.test_mode = True
+                print("Switching to test mode - adb commands will be mocked")
+                return True
             if answer in {'n', 'no', 'skip', 's'}:
                 return False
-            print("Please answer with 'y' or 'n'.")
+            print("Please answer with 'y' (yes), 'n' (no), or 't' (test mode).")
+
+    def _cleanup_offline_wifi_devices(self, devices: List[DeviceState]) -> None:
+        """Disconnect offline Wi-Fi devices to clean up stale connections."""
+        from core.adb_utils import disconnect_device
+        
+        offline_wifi = [d for d in devices if d.state == 'offline' and is_wifi_serial(d.serial)]
+        if offline_wifi and self.adb_path:
+            for device in offline_wifi:
+                try:
+                    disconnect_device(self.adb_path, device.serial)
+                except:
+                    pass  # Ignore errors during cleanup
 
     def _connect_via_wifi(self) -> bool:
         if not self.adb_path:
@@ -506,5 +545,16 @@ class DeviceDetector:
 
         self.device_serial = device.serial
         self._last_wifi_endpoint = endpoint
-        print(f"Connected to {device.summary()} over Wi-Fi.")
+        
+        if device.state == 'offline':
+            print(f"Device connected but showing as [offline].")
+            print("This usually means:")
+            print("  1. The device screen is locked - Please unlock it")
+            print("  2. You need to accept the USB debugging authorization popup")
+            print("  3. Wait a few seconds for the connection to stabilize")
+            print("\nThe device IS connected. Please unlock and authorize, then continue.")
+            print("The script will proceed and attempt to use the device.")
+        else:
+            print(f"Connected to {device.summary()} over Wi-Fi.")
+        
         return True

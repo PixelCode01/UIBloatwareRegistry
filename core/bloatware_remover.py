@@ -26,8 +26,6 @@ except ImportError:
     REGISTRY_AVAILABLE = False
 
 class BloatwareRemover(ABC):
-    """Base class for brand-specific bloatware removal"""
-    
     def __init__(self, brand: str, config_file: str = None, test_mode: bool = False, use_registry: bool = True):
         self.brand = brand
         self.config_file = config_file or f"{brand.lower()}_config.json"
@@ -41,7 +39,6 @@ class BloatwareRemover(ABC):
         self._last_wifi_endpoint = None
         
     def _setup_logging(self) -> logging.Logger:
-        """Setup logging configuration"""
         logging.basicConfig(
             level=logging.INFO,
             format='%(asctime)s - %(levelname)s - %(message)s',
@@ -53,19 +50,16 @@ class BloatwareRemover(ABC):
         return logging.getLogger(f'{self.brand}Remover')
     
     def _load_packages(self) -> Dict:
-        """Load package configuration from JSON file or centralized registry"""
-        # Try loading from centralized registry first
         if self.use_registry and REGISTRY_AVAILABLE:
             try:
                 registry = PackageRegistry()
-                brand_data = registry.get_brand_packages(self.brand.lower())
+                brand_data = registry.get_packages_for_brand(self.brand.lower())
                 if brand_data:
                     self.logger.info(f"Loaded packages from centralized registry for {self.brand}")
-                    return self._convert_registry_format(brand_data)
+                    return self._convert_registry_format_from_dict(brand_data)
             except Exception as e:
                 self.logger.warning(f"Failed to load from registry: {e}, falling back to legacy config")
         
-        # Fall back to legacy config file
         try:
             if os.path.exists(self.config_file):
                 with open(self.config_file, 'r') as f:
@@ -76,8 +70,13 @@ class BloatwareRemover(ABC):
             self.logger.error(f"Failed to load config: {e}")
             return self._get_default_packages()
     
+    def _convert_registry_format_from_dict(self, brand_data: Dict) -> Dict:
+        categories = {}
+        for category_id, package_list in brand_data.items():
+            categories[category_id] = package_list
+        return {'categories': categories}
+    
     def _convert_registry_format(self, brand_data: Dict) -> Dict:
-        """Convert centralized registry format to the format expected by the remover"""
         categories = {}
         for category_id, category_data in brand_data.get('categories', {}).items():
             package_list = []
@@ -92,12 +91,9 @@ class BloatwareRemover(ABC):
     
     @abstractmethod
     def _get_default_packages(self) -> Dict:
-        """Return default package configuration for the brand"""
         pass
     
     def check_device_connection(self) -> bool:
-        """Check if a device is connected via ADB, retrying as needed."""
-
         while True:
             if self.test_mode:
                 print("Running in test mode - skipping device connection check")
@@ -120,8 +116,8 @@ class BloatwareRemover(ABC):
                 self.logger.error("Failed to query devices: %s", exc)
                 print("\nADB could not communicate with the device.")
                 print("Please make sure Developer options and USB debugging are enabled, then reconnect the cable.")
-                print("   Enable Developer options: Settings  About phone  tap 'Build number' seven times.")
-                print("   Enable USB debugging: Settings  System  Developer options  toggle USB debugging on.")
+                print("   Enable Developer options: Settings > About phone > tap 'Build number' seven times.")
+                print("   Enable USB debugging: Settings > System > Developer options > toggle USB debugging on.")
                 print("   Reconnect the device and accept the USB debugging prompt if shown.")
                 if self._prompt_wifi_connection("Attempt to connect over Wi-Fi ADB instead?"):
                     continue
@@ -162,22 +158,53 @@ class BloatwareRemover(ABC):
             pending = [device for device in devices if device.state != 'device']
 
             if pending:
-                print("\nDetected devices that still need attention:")
-                for device in pending:
-                    self._show_device_state_instructions(device)
-                if self._prompt_wifi_connection("Switch to Wi-Fi debugging?"):
-                    continue
-                action = self._prompt_connection_retry()
-                if action == "retry":
-                    continue
-                if action == "test":
-                    decision = self._prompt_enable_test_mode()
-                    if decision == 'test':
-                        return True
-                    if decision == 'quit':
-                        return False
-                    continue
-                return False
+                offline_wifi = [d for d in pending if d.state == 'offline' and is_wifi_serial(d.serial)]
+                other_pending = [d for d in pending if d not in offline_wifi]
+                
+                if authorized and offline_wifi and not other_pending:
+                    print("\nNote: Ignoring stale offline Wi-Fi connections.")
+                    pass
+                elif offline_wifi and not other_pending:
+                    print("\nDetected Wi-Fi device(s) that need authorization:")
+                    for device in offline_wifi:
+                        print(f"  - {device.summary()}")
+                    print("\nOn your device:")
+                    print("   1. Unlock the screen if locked")
+                    print("   2. Look for 'Allow USB debugging?' popup and tap 'Allow'")
+                    print("   3. If no popup appears, disable and re-enable 'Wireless debugging'")
+                    print("\nWait a moment, then type 'retry' to continue.")
+                    
+                    if self._prompt_wifi_connection("Switch to Wi-Fi debugging?"):
+                        continue
+                    action = self._prompt_connection_retry()
+                    if action == "retry":
+                        continue
+                    if action == "test":
+                        decision = self._prompt_enable_test_mode()
+                        if decision == 'test':
+                            return True
+                        if decision == 'quit':
+                            return False
+                        continue
+                    return False
+                else:
+                    print("\nDetected devices that still need attention:")
+                    for device in pending:
+                        self._show_device_state_instructions(device)
+                    
+                    if self._prompt_wifi_connection("Switch to Wi-Fi debugging?"):
+                        continue
+                    action = self._prompt_connection_retry()
+                    if action == "retry":
+                        continue
+                    if action == "test":
+                        decision = self._prompt_enable_test_mode()
+                        if decision == 'test':
+                            return True
+                        if decision == 'quit':
+                            return False
+                        continue
+                    return False
 
             if self.device_serial:
                 for device in authorized:
@@ -216,7 +243,6 @@ class BloatwareRemover(ABC):
             return False
     
     def get_installed_packages(self) -> List[str]:
-        """Get list of installed packages on device"""
         if self.test_mode:
             return self._get_all_packages()
 
@@ -224,7 +250,7 @@ class BloatwareRemover(ABC):
             return []
 
         try:
-            result = self._run_adb(['shell', 'pm', 'list', 'packages'], timeout=60)
+            result = self._run_adb(['shell', 'pm', 'list', 'packages', '--user', '0'], timeout=60)
         except (ADBCommandError, DeviceSelectionError) as exc:
             self.logger.error("Failed to get installed packages: %s", exc)
             print("Unable to retrieve the package list. Ensure the device stays unlocked and USB debugging remains enabled.")
@@ -238,7 +264,6 @@ class BloatwareRemover(ABC):
         return packages
     
     def uninstall_package(self, package: str) -> bool:
-        """Uninstall a single package"""
         if self.test_mode:
             print(f"TEST MODE: Would remove package: {package}")
             self.logger.info(f"TEST MODE: Would remove package: {package}")
@@ -251,7 +276,7 @@ class BloatwareRemover(ABC):
             result = self._run_adb(
                 ['shell', 'pm', 'uninstall', '--user', '0', package],
                 check=False,
-                timeout=60,
+                timeout=60
             )
         except (ADBCommandError, DeviceSelectionError) as exc:
             self.logger.error("Error removing %s: %s", package, exc)
@@ -268,7 +293,6 @@ class BloatwareRemover(ABC):
         return False
     
     def backup_packages(self, packages: List[str]) -> bool:
-        """Create backup of packages before removal"""
         backup_file = f"{self.brand.lower()}_backup.json"
         try:
             import datetime
@@ -291,7 +315,6 @@ class BloatwareRemover(ABC):
             return False
     
     def get_app_name(self, package_name: str) -> str:
-        """Get human-readable app name from package name"""
         if package_name in self._app_name_cache:
             return self._app_name_cache[package_name]
 
@@ -339,7 +362,6 @@ class BloatwareRemover(ABC):
         return fallback
 
     def get_package_metadata(self, package_name: str) -> Dict[str, str]:
-        """Retrieve risk and description metadata for a package"""
         categories = self.packages.get('categories', {})
         for category, package_list in categories.items():
             for package_info in package_list:
@@ -508,7 +530,6 @@ class BloatwareRemover(ABC):
             print("Removal cancelled")
 
     def interactive_removal(self) -> None:
-        """Interactive package removal with user selection"""
         if not self.check_device_connection():
             return
         
@@ -554,7 +575,6 @@ class BloatwareRemover(ABC):
             print("No packages selected for removal")
     
     def remove_packages(self, packages: List[str] = None, skip_connection_check: bool = False) -> None:
-        """Remove specified packages or all configured packages"""
         if not skip_connection_check and not self.check_device_connection():
             return
         
@@ -583,7 +603,6 @@ class BloatwareRemover(ABC):
             print("No actual changes were made - this was a test run")
     
     def _get_all_packages(self) -> List[str]:
-        """Get all package names from configuration"""
         all_packages = []
         categories = self.packages.get('categories', {})
         
@@ -594,8 +613,6 @@ class BloatwareRemover(ABC):
         return all_packages
 
     def configure_adb(self, adb_path: Optional[str], device_serial: Optional[str]) -> None:
-        """Persist adb context provided by the device detector."""
-
         if adb_path:
             self.adb_path = adb_path
         if device_serial:
@@ -604,8 +621,6 @@ class BloatwareRemover(ABC):
                 self._last_wifi_endpoint = device_serial
 
     def _ensure_adb_path(self) -> str:
-        """Resolve and cache the adb executable path."""
-
         if self.adb_path:
             return self.adb_path
 
@@ -613,10 +628,6 @@ class BloatwareRemover(ABC):
         return self.adb_path
 
     def _prompt_enable_test_mode(self) -> str:
-        """Ask the user for the next step after a connection failure.
-
-        Returns one of 'test', 'retry', or 'quit'."""
-
         while True:
             choice = input(
                 "Do you want to run in test mode anyway? (y/n or 'quit' to cancel): "
@@ -638,8 +649,6 @@ class BloatwareRemover(ABC):
             print("Please respond with 'y', 'n', or type 'quit' to cancel.")
 
     def _prompt_connection_retry(self) -> str:
-        """Prompt the user to retry, switch to test mode, or cancel connection attempts."""
-
         while True:
             response = (
                 input("Type 'retry' once the issue is fixed, 'test' to continue in test mode, or 'quit' to cancel: ")
@@ -656,12 +665,16 @@ class BloatwareRemover(ABC):
 
     def _prompt_wifi_connection(self, message: str) -> bool:
         while True:
-            reply = input(f"{message} (y/n): ").strip().lower()
+            reply = input(f"{message} (y/n/t for test): ").strip().lower()
             if reply in {'y', 'yes'}:
                 return self._connect_via_wifi()
+            if reply in {'t', 'test'}:
+                self.test_mode = True
+                print("Switching to test mode - adb commands will be mocked")
+                return True
             if reply in {'n', 'no', 'skip', 's'}:
                 return False
-            print("Please answer with 'y' or 'n'.")
+            print("Please answer with 'y' (yes), 'n' (no), or 't' (test mode).")
 
     def _connect_via_wifi(self) -> bool:
         try:
@@ -735,12 +748,21 @@ class BloatwareRemover(ABC):
         self.adb_path = adb_path
         self.device_serial = device.serial
         self._last_wifi_endpoint = endpoint
-        print(f"Connected to {device.summary()} over Wi-Fi.")
+        
+        if device.state == 'offline':
+            print(f"Device connected but showing as [offline].")
+            print("This usually means:")
+            print("  1. The device screen is locked - Please unlock it")
+            print("  2. You need to accept the USB debugging authorization popup")
+            print("  3. Wait a few seconds for the connection to stabilize")
+            print("\nThe device IS connected. Please unlock and authorize, then continue.")
+            print("The script will proceed and attempt to use the device.")
+        else:
+            print(f"Connected to {device.summary()} over Wi-Fi.")
+        
         return True
 
     def _show_device_state_instructions(self, device: DeviceState) -> None:
-        """Display guidance for resolving common device connection states."""
-
         print(f"  - {device.summary()}")
         state = device.state.lower().strip()
 
@@ -756,8 +778,6 @@ class BloatwareRemover(ABC):
             print("     Check the USB connection and confirm the device is unlocked with USB debugging enabled.")
 
     def _select_device(self, authorized_devices: List[DeviceState]) -> Optional[DeviceState]:
-        """Select a device from the authorised list, prompting when needed."""
-
         if not authorized_devices:
             return None
 
@@ -790,8 +810,6 @@ class BloatwareRemover(ABC):
             print("Selection out of range. Please try again.")
 
     def _run_adb(self, args: List[str], *, timeout: int = 15, check: bool = True) -> subprocess.CompletedProcess:
-        """Run an adb command for the selected device."""
-
         if self.test_mode:
             raise ADBCommandError("Attempted to execute adb command while in test mode")
 
@@ -807,7 +825,7 @@ class BloatwareRemover(ABC):
             args,
             device_serial=self.device_serial,
             timeout=timeout,
-            check=check,
+            check=check
         )
 
     def manual_package_removal(self) -> None:

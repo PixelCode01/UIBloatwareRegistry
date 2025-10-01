@@ -4,7 +4,6 @@
 import subprocess
 
 def run_command(cmd, cwd=None):
-    """Run a command and return success status."""
     try:
         result = subprocess.run(cmd, shell=True, cwd=cwd, check=True, 
                               capture_output=True, text=True)
@@ -16,7 +15,6 @@ def run_command(cmd, cwd=None):
         return False
 
 def create_spec_file():
-    """Create PyInstaller spec file"""
     spec_content = '''# -*- mode: python ; coding: utf-8 -*-
 import os
 
@@ -73,10 +71,10 @@ a = Analysis(
         'Honor.honor_remover',
         'Motorola.motorola_remover',
         'Nothing.nothing_remover',
-    'Asus.asus_remover',
-    'Google.google_remover',
-    'Infinix.infinix_remover',
-    'Lenovo.lenovo_remover',
+        'Asus.asus_remover',
+        'Google.google_remover',
+        'Infinix.infinix_remover',
+        'Lenovo.lenovo_remover',
         'core.bloatware_remover',
         'device_detector',
         'version'
@@ -122,7 +120,6 @@ exe = EXE(
     print("Created PyInstaller spec file.")
 
 def build_executable():
-    """Build the executable using PyInstaller"""
     print("Building standalone executable...")
     
     if not run_command("pip install pyinstaller"):
@@ -137,7 +134,6 @@ def build_executable():
     return True
 
 def main():
-    """Create the PyInstaller spec file."""
     print("Creating PyInstaller spec file...")
     create_spec_file()
     print("Spec file created successfully!")

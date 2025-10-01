@@ -24,7 +24,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         "--tcpip-port",
         type=int,
         default=DEFAULT_TCPIP_PORT,
-        help=f"Port to use when enabling TCP/IP mode (default {DEFAULT_TCPIP_PORT})",
+        help=f"Port to use when enabling TCP/IP mode (default {DEFAULT_TCPIP_PORT})"
     )
     return parser.parse_args(argv)
 
@@ -46,7 +46,7 @@ def main():
         detector.connect_via_wifi(
             endpoint=args.wifi_endpoint,
             pairing_host=args.wifi_pair,
-            pairing_code=args.wifi_code,
+            pairing_code=args.wifi_code
         )
     elif args.wifi and not args.test:
         detector.connect_via_wifi()
@@ -76,9 +76,7 @@ def main():
     
     if not remover:
         print("This device brand is not currently supported.")
-        print(
-            "Supported brands: Samsung, Xiaomi, Oppo, Vivo, Realme, Tecno, OnePlus, Huawei, Honor, Motorola, Nothing"
-        )
+        print("Supported brands: Samsung, Xiaomi, Oppo, Vivo, Realme, Tecno, OnePlus, Huawei, Honor, Motorola, Nothing")
         print("More brands will be added in future updates.")
         return
     

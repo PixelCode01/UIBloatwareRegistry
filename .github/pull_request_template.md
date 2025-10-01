@@ -8,14 +8,14 @@
 
 <!-- Check all that apply -->
 
-- [ ] 🆕 New package(s) added
-- [ ] 🔄 Updated existing package(s)
-- [ ] 🗑️ Removed deprecated package(s)
-- [ ] 🔧 Bug fix (non-breaking change which fixes an issue)
-- [ ] ✨ New feature (non-breaking change which adds functionality)
-- [ ] 💥 Breaking change (fix or feature that would cause existing functionality to not work as expected)
-- [ ] 📚 Documentation update
-- [ ] 🎨 Code style/formatting changes
+- [ ] New package(s) added
+- [ ] Updated existing package(s)
+- [ ] Removed deprecated package(s)
+- [ ] Bug fix (non-breaking change which fixes an issue)
+- [ ] New feature (non-breaking change which adds functionality)
+- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
+- [ ] Documentation update
+- [ ] Code style/formatting changes
 
 ## Changes Made
 
@@ -52,14 +52,14 @@
 
 <!-- Check all that apply -->
 
-- [ ] ✅ Tested on actual device
-- [ ] ✅ Used test mode to verify
-- [ ] ✅ Package removal successful
-- [ ] ✅ No system instability observed
-- [ ] ✅ Affected features documented
-- [ ] ✅ Recovery/restoration tested
-- [ ] ⚠️ Found issues (documented below)
-- [ ] ❌ Not tested yet (explain why)
+- [ ] Tested on actual device
+- [ ] Used test mode to verify
+- [ ] Package removal successful
+- [ ] No system instability observed
+- [ ] Affected features documented
+- [ ] Recovery/restoration tested
+- [ ] Found issues (documented below)
+- [ ] Not tested yet (explain why)
 
 ### Issues Encountered
 

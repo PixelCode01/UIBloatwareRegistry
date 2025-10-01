@@ -1,11 +1,11 @@
-blank_issues_enabled: true
+blank_issues_enabled: false
 contact_links:
-  - name: 💬 General Discussion
+  - name: General Discussion
     url: https://github.com/PixelCode01/UIBloatwareRegistry/discussions
     about: Ask questions and discuss with the community
-  - name: 📚 Documentation
+  - name: Documentation
     url: https://github.com/PixelCode01/UIBloatwareRegistry/blob/main/README.md
     about: Read the documentation and usage guides
-  - name: 🤝 Contributing Guide
+  - name: Contributing Guide
     url: https://github.com/PixelCode01/UIBloatwareRegistry/blob/main/CONTRIBUTING.md
     about: Learn how to contribute to the project

@@ -1,14 +1,11 @@
 #!/usr/bin/env python3
-"""
-Generate SHA256 hashes for release files
-"""
+"""Generate SHA256 hashes for release files"""
 
 import hashlib
 import os
 import sys
 
 def calculate_sha256(file_path):
-    """Calculate SHA256 hash of a file"""
     sha256_hash = hashlib.sha256()
     try:
         with open(file_path, "rb") as f:
@@ -19,7 +16,6 @@ def calculate_sha256(file_path):
         return None
 
 def main():
-    """Generate hashes for release files"""
     files_to_hash = [
         "dist/android-bloatware-remover.exe",
         "dist/android-bloatware-remover"
