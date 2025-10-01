@@ -33,90 +33,111 @@ class DeviceDetector:
         self.device_serial: Optional[str] = None
     
     def get_device_info(self) -> Optional[dict]:
-        if self.test_mode:
-            print("TEST MODE: Using mock device information")
-            self.device_info = {
-                'brand': 'test_brand',
-                'model': 'test_model',
-                'manufacturer': 'test_manufacturer',
-                'detected_brand': 'samsung'
-            }
-            self.device_serial = None
-            return self.device_info
+        while True:
+            if self.test_mode:
+                print("TEST MODE: Using mock device information")
+                self.device_info = {
+                    'brand': 'test_brand',
+                    'model': 'test_model',
+                    'manufacturer': 'test_manufacturer',
+                    'detected_brand': 'samsung'
+                }
+                self.device_serial = None
+                return self.device_info
 
-        if not self.adb_path:
+            if not self.adb_path:
+                try:
+                    self.adb_path = resolve_adb_path()
+                except ADBNotFoundError as exc:
+                    print(str(exc))
+                    decision = self._prompt_enable_test_mode()
+                    if decision == 'test':
+                        continue
+                    if decision == 'quit':
+                        return None
+                    continue
+
             try:
-                self.adb_path = resolve_adb_path()
-            except ADBNotFoundError as exc:
-                print(str(exc))
-                if self._prompt_enable_test_mode():
-                    return self.get_device_info()
-                return None
+                devices = list_devices(self.adb_path)
+            except ADBCommandError as exc:
+                print("Failed to communicate with adb. Ensure the platform tools are installed and your device is connected.")
+                if exc.stderr:
+                    print(exc.stderr.strip())
+                decision = self._prompt_enable_test_mode()
+                if decision == 'test':
+                    continue
+                if decision == 'quit':
+                    return None
+                continue
 
-        try:
-            devices = list_devices(self.adb_path)
-        except ADBCommandError as exc:
-            print("Failed to communicate with adb. Ensure the platform tools are installed and your device is connected.")
-            if exc.stderr:
-                print(exc.stderr.strip())
-            if self._prompt_enable_test_mode():
-                return self.get_device_info()
-            return None
+            if not devices:
+                print("No devices detected. Ensure USB debugging is enabled and the device is unlocked.")
+                decision = self._prompt_enable_test_mode()
+                if decision == 'test':
+                    continue
+                if decision == 'quit':
+                    return None
+                continue
 
-        if not devices:
-            print("No devices detected. Ensure USB debugging is enabled and the device is unlocked.")
-            if self._prompt_enable_test_mode():
-                return self.get_device_info()
-            return None
+            authorized = [device for device in devices if device.state == 'device']
+            unauthorized = [device for device in devices if device.state != 'device']
 
-        authorized = [device for device in devices if device.state == 'device']
-        unauthorized = [device for device in devices if device.state != 'device']
+            if unauthorized:
+                print("Detected devices that are not ready:")
+                for device in unauthorized:
+                    print(f"  - {device.summary()}")
+                print("Unlock your device and accept the USB debugging prompt, then try again.")
 
-        if unauthorized:
-            print("Detected devices that are not ready:")
-            for device in unauthorized:
-                print(f"  - {device.summary()}")
-            print("Unlock your device and accept the USB debugging prompt, then try again.")
+            if not authorized:
+                decision = self._prompt_enable_test_mode()
+                if decision == 'test':
+                    continue
+                if decision == 'quit':
+                    return None
+                continue
 
-        if not authorized:
-            if self._prompt_enable_test_mode():
-                return self.get_device_info()
-            return None
+            selected = self._select_device(authorized)
+            if not selected:
+                decision = self._prompt_enable_test_mode()
+                if decision == 'test':
+                    continue
+                if decision == 'quit':
+                    return None
+                continue
 
-        selected = self._select_device(authorized)
-        if not selected:
-            return None
+            self.device_serial = selected.serial
 
-        self.device_serial = selected.serial
+            try:
+                brand = self._get_prop('ro.product.brand')
+                model = self._get_prop('ro.product.model')
+                manufacturer = self._get_prop('ro.product.manufacturer')
+            except ADBCommandError as exc:
+                print("Failed to read device information via adb.")
+                if exc.stderr:
+                    print(exc.stderr.strip())
+                if 'unauthorized' in (exc.stderr or exc.stdout or '').lower():
+                    print("Authorize this computer on your device and try again.")
+                decision = self._prompt_enable_test_mode()
+                if decision == 'test':
+                    continue
+                if decision == 'quit':
+                    return None
+                continue
 
-        try:
-            brand = self._get_prop('ro.product.brand')
-            model = self._get_prop('ro.product.model')
-            manufacturer = self._get_prop('ro.product.manufacturer')
-        except ADBCommandError as exc:
-            print("Failed to read device information via adb.")
-            if exc.stderr:
-                print(exc.stderr.strip())
-            if 'unauthorized' in (exc.stderr or exc.stdout or '').lower():
-                print("Authorize this computer on your device and try again.")
-            if self._prompt_enable_test_mode():
-                return self.get_device_info()
-            return None
+            brand = brand.lower()
+            model = model.lower()
+            manufacturer = manufacturer.lower()
 
-        brand = brand.lower()
-        model = model.lower()
-        manufacturer = manufacturer.lower()
+            detected_brand = self._detect_brand(brand, model, manufacturer)
 
-        detected_brand = self._detect_brand(brand, model, manufacturer)
+            self.device_info = {
+                'brand': brand,
+                'model': model,
+                'manufacturer': manufacturer,
+                'detected_brand': detected_brand
+            }
 
-        self.device_info = {
-            'brand': brand,
-            'model': model,
-            'manufacturer': manufacturer,
-            'detected_brand': detected_brand
-        }
-
-        return self.device_info
+            return self.device_info
     
     def _detect_brand(self, brand: str, model: str, manufacturer: str) -> Optional[str]:
         search_text = f"{brand} {model} {manufacturer}".lower()
@@ -230,13 +251,26 @@ class DeviceDetector:
         else:
             print("No device information available")
 
-    def _prompt_enable_test_mode(self) -> bool:
-        choice = input("Do you want to run in test mode anyway? (y/n): ").lower().strip()
-        if choice == 'y':
-            self.test_mode = True
-            print("Continuing in test mode - adb commands will be mocked")
-            return True
-        return False
+    def _prompt_enable_test_mode(self) -> str:
+        while True:
+            choice = input(
+                "Do you want to run in test mode anyway? (y/n or 'quit' to cancel): "
+            ).lower().strip()
+
+            if choice in {'y', 'yes'}:
+                self.test_mode = True
+                print("Continuing in test mode - adb commands will be mocked")
+                return 'test'
+
+            if choice in {'n', 'no'}:
+                print("Okay, we'll keep trying to detect the device normally.")
+                return 'retry'
+
+            if choice in {'quit', 'q', 'exit', 'cancel'}:
+                print("Cancelling device detection.")
+                return 'quit'
+
+            print("Please respond with 'y', 'n', or type 'quit' to cancel.")
 
     def _select_device(self, devices: List[DeviceState]) -> Optional[DeviceState]:
         if not devices:
