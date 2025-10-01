@@ -2,6 +2,12 @@
 
 Remove unwanted pre-installed apps from your Android phone without root access. Works with Samsung, Xiaomi, Oppo, Vivo, Realme, Tecno, OnePlus, Huawei, Honor, Motorola, Nothing, Asus, Google Pixel, Infinix, and Lenovo devices.
 
+## Web Explorer
+
+**Browse packages online**: [UIBloatwareRegistry Explorer](https://pixelcode01.github.io/UIBloatwareRegistry/)
+
+Explore and search through all bloatware packages in your browser with filters for brands and risk levels!
+
 ## What it does
 
 Your phone comes with tons of apps you never asked for. This tool helps you get rid of them safely using ADB (Android Debug Bridge). No root required.
