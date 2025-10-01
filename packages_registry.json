@@ -249,6 +249,22 @@
           ]
         }
       }
+    },
+    "oppo": {
+      "name": "Oppo",
+      "categories": {
+        "system_apps": {
+          "name": "System Apps",
+          "description": "System Apps applications",
+          "packages": [
+            {
+              "name": "com.finshell.fin",
+              "description": "FinShell Pay",
+              "risk": "safe"
+            }
+          ]
+        }
+      }
     }
   },
   "risk_levels": {
