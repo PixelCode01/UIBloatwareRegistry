@@ -19,13 +19,20 @@ from .adb_utils import (
     is_wifi_serial,
 )
 
+try:
+    from .package_registry import PackageRegistry
+    REGISTRY_AVAILABLE = True
+except ImportError:
+    REGISTRY_AVAILABLE = False
+
 class BloatwareRemover(ABC):
     """Base class for brand-specific bloatware removal"""
     
-    def __init__(self, brand: str, config_file: str = None, test_mode: bool = False):
+    def __init__(self, brand: str, config_file: str = None, test_mode: bool = False, use_registry: bool = True):
         self.brand = brand
         self.config_file = config_file or f"{brand.lower()}_config.json"
         self.test_mode = test_mode
+        self.use_registry = use_registry and REGISTRY_AVAILABLE
         self.logger = self._setup_logging()
         self.packages = self._load_packages()
         self._app_name_cache = {}
@@ -46,7 +53,19 @@ class BloatwareRemover(ABC):
         return logging.getLogger(f'{self.brand}Remover')
     
     def _load_packages(self) -> Dict:
-        """Load package configuration from JSON file"""
+        """Load package configuration from JSON file or centralized registry"""
+        # Try loading from centralized registry first
+        if self.use_registry and REGISTRY_AVAILABLE:
+            try:
+                registry = PackageRegistry()
+                brand_data = registry.get_brand_packages(self.brand.lower())
+                if brand_data:
+                    self.logger.info(f"Loaded packages from centralized registry for {self.brand}")
+                    return self._convert_registry_format(brand_data)
+            except Exception as e:
+                self.logger.warning(f"Failed to load from registry: {e}, falling back to legacy config")
+        
+        # Fall back to legacy config file
         try:
             if os.path.exists(self.config_file):
                 with open(self.config_file, 'r') as f:
@@ -56,6 +75,20 @@ class BloatwareRemover(ABC):
         except Exception as e:
             self.logger.error(f"Failed to load config: {e}")
             return self._get_default_packages()
+    
+    def _convert_registry_format(self, brand_data: Dict) -> Dict:
+        """Convert centralized registry format to the format expected by the remover"""
+        categories = {}
+        for category_id, category_data in brand_data.get('categories', {}).items():
+            package_list = []
+            for package in category_data.get('packages', []):
+                package_list.append({
+                    'name': package['name'],
+                    'description': package['description'],
+                    'risk': package['risk']
+                })
+            categories[category_id] = package_list
+        return {'categories': categories}
     
     @abstractmethod
     def _get_default_packages(self) -> Dict:
