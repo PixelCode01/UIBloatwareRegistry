@@ -1,6 +1,6 @@
 # Android Bloatware Remover
 
-Remove unwanted pre-installed apps from your Android phone without root access. Works with Samsung, Xiaomi, Oppo, Vivo, Realme, Tecno, OnePlus, Huawei, Honor, Motorola, and Nothing devices.
+Remove unwanted pre-installed apps from your Android phone without root access. Works with Samsung, Xiaomi, Oppo, Vivo, Realme, Tecno, OnePlus, Huawei, Honor, Motorola, Nothing, Asus, Google Pixel, Infinix, and Lenovo devices.
 
 ## What it does
 
@@ -19,6 +19,10 @@ Your phone comes with tons of apps you never asked for. This tool helps you get 
 - Honor (Magic UI)
 - Motorola (My UX)
 - Nothing (Nothing OS)
+- Asus (ZenUI/ROG UI)
+- Google Pixel (Pixel UI)
+- Infinix (XOS)
+- Lenovo (ZUI)
 
 ## Quick Download
 
@@ -50,6 +54,10 @@ Your phone comes with tons of apps you never asked for. This tool helps you get 
    - **Motorola**: `Motorola/motorola_remover.sh`
    - **Nothing**: `Nothing/nothing_remover.sh`
    - **Tecno**: `Tecno/tecno_remover.sh`
+   - **Asus**: `Asus/asus_remover.sh`
+   - **Google Pixel**: `Google/google_remover.sh`
+   - **Infinix**: `Infinix/infinix_remover.sh`
+   - **Lenovo**: `Lenovo/lenovo_remover.sh`
 3. Run the script using a Shizuku-compatible terminal
 4. Follow the interactive prompts to remove bloatware
 

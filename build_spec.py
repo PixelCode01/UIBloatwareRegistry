@@ -22,7 +22,23 @@ import os
 
 block_cipher = None
 
-brand_dirs = ['Samsung', 'Xiaomi', 'Oppo', 'Vivo', 'Realme', 'Tecno', 'OnePlus', 'Huawei', 'Honor', 'Motorola', 'Nothing']
+brand_dirs = [
+    'Samsung',
+    'Xiaomi',
+    'Oppo',
+    'Vivo',
+    'Realme',
+    'Tecno',
+    'OnePlus',
+    'Huawei',
+    'Honor',
+    'Motorola',
+    'Nothing',
+    'Asus',
+    'Google',
+    'Infinix',
+    'Lenovo',
+]
 datas = []
 
 for brand in brand_dirs:
@@ -57,6 +73,10 @@ a = Analysis(
         'Honor.honor_remover',
         'Motorola.motorola_remover',
         'Nothing.nothing_remover',
+    'Asus.asus_remover',
+    'Google.google_remover',
+    'Infinix.infinix_remover',
+    'Lenovo.lenovo_remover',
         'core.bloatware_remover',
         'device_detector',
         'version'
