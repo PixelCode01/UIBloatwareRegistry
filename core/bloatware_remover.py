@@ -1,19 +1,22 @@
-import subprocess
+﻿import subprocess
 import json
 import os
 import logging
-import time
 from typing import List, Dict, Optional
 from abc import ABC, abstractmethod
 
 from .adb_utils import (
     ADBCommandError,
     ADBNotFoundError,
+    DEFAULT_TCPIP_PORT,
     DeviceSelectionError,
     DeviceState,
+    connect_wifi_device,
     list_devices,
+    pair_device,
     resolve_adb_path,
     run_command,
+    is_wifi_serial,
 )
 
 class BloatwareRemover(ABC):
@@ -25,9 +28,10 @@ class BloatwareRemover(ABC):
         self.test_mode = test_mode
         self.logger = self._setup_logging()
         self.packages = self._load_packages()
-        self._app_name_cache: Dict[str, str] = {}
-        self.adb_path: Optional[str] = None
-        self.device_serial: Optional[str] = None
+        self._app_name_cache = {}
+        self.adb_path = None
+        self.device_serial = None
+        self._last_wifi_endpoint = None
         
     def _setup_logging(self) -> logging.Logger:
         """Setup logging configuration"""
@@ -83,9 +87,11 @@ class BloatwareRemover(ABC):
                 self.logger.error("Failed to query devices: %s", exc)
                 print("\nADB could not communicate with the device.")
                 print("Please make sure Developer options and USB debugging are enabled, then reconnect the cable.")
-                print("  • Enable Developer options: Settings → About phone → tap 'Build number' seven times.")
-                print("  • Enable USB debugging: Settings → System → Developer options → toggle USB debugging on.")
-                print("  • Reconnect the device and accept the USB debugging prompt if shown.")
+                print("   Enable Developer options: Settings  About phone  tap 'Build number' seven times.")
+                print("   Enable USB debugging: Settings  System  Developer options  toggle USB debugging on.")
+                print("   Reconnect the device and accept the USB debugging prompt if shown.")
+                if self._prompt_wifi_connection("Attempt to connect over Wi-Fi ADB instead?"):
+                    continue
                 action = self._prompt_connection_retry()
                 if action == "retry":
                     continue
@@ -105,6 +111,8 @@ class BloatwareRemover(ABC):
                 print("  2. If Developer options aren't visible, enable them by tapping 'Build number' seven times.")
                 print("  3. Open Developer options and enable USB debugging.")
                 print("  4. Confirm the 'Allow USB debugging' prompt on the device.")
+                if self._prompt_wifi_connection("Would you like to try Wi-Fi debugging instead?"):
+                    continue
                 action = self._prompt_connection_retry()
                 if action == "retry":
                     continue
@@ -124,6 +132,8 @@ class BloatwareRemover(ABC):
                 print("\nDetected devices that still need attention:")
                 for device in pending:
                     self._show_device_state_instructions(device)
+                if self._prompt_wifi_connection("Switch to Wi-Fi debugging?"):
+                    continue
                 action = self._prompt_connection_retry()
                 if action == "retry":
                     continue
@@ -145,6 +155,8 @@ class BloatwareRemover(ABC):
 
             if not authorized:
                 print("No authorised devices were detected after reconnection attempts.")
+                if self._prompt_wifi_connection("Try connecting via Wi-Fi ADB?"):
+                    continue
                 decision = self._prompt_enable_test_mode()
                 if decision == 'test':
                     return True
@@ -174,48 +186,15 @@ class BloatwareRemover(ABC):
         """Get list of installed packages on device"""
         if self.test_mode:
             return self._get_all_packages()
-        
+
         if not self.device_serial and not self.check_device_connection():
             return []
 
-        commands: List[List[str]] = [['shell', 'pm', 'list', 'packages']]
-        result: Optional[subprocess.CompletedProcess] = None
-        limited_user_scope = False
-        tried_user_zero = False
-
-        while commands:
-            args = commands.pop(0)
-            try:
-                result = self._run_adb(args, timeout=60)
-                if '--user' in args:
-                    limited_user_scope = True
-                break
-            except DeviceSelectionError as exc:
-                self.logger.error("Failed to get installed packages: %s", exc)
-                print("Unable to retrieve the package list. Ensure the device stays unlocked and USB debugging remains enabled.")
-                return []
-            except ADBCommandError as exc:
-                if not tried_user_zero and self._is_multi_user_permission_error(exc):
-                    tried_user_zero = True
-                    limited_user_scope = True
-                    self.logger.warning(
-                        "Permission denied while listing packages; retrying for user 0 only: %s",
-                        exc,
-                    )
-                    print("\nAndroid denied access to the active user profile.")
-                    print("Retrying by listing packages for the primary user (0). Some apps from other profiles may be missing.")
-                    commands.insert(0, ['shell', 'pm', 'list', 'packages', '--user', '0'])
-                    continue
-
-                self.logger.error("Failed to get installed packages: %s", exc)
-                if self._is_multi_user_permission_error(exc):
-                    print("Unable to list packages because the shell user lacks permission for the current profile.")
-                    print("Switch the device back to the primary user or run 'adb shell am switch-user 0', then try again.")
-                else:
-                    print("Unable to retrieve the package list. Ensure the device stays unlocked and USB debugging remains enabled.")
-                return []
-
-        if not result:
+        try:
+            result = self._run_adb(['shell', 'pm', 'list', 'packages'], timeout=60)
+        except (ADBCommandError, DeviceSelectionError) as exc:
+            self.logger.error("Failed to get installed packages: %s", exc)
+            print("Unable to retrieve the package list. Ensure the device stays unlocked and USB debugging remains enabled.")
             return []
 
         packages = [
@@ -223,12 +202,6 @@ class BloatwareRemover(ABC):
             for line in result.stdout.split('\n')
             if line.startswith('package:')
         ]
-
-        if limited_user_scope:
-            print(
-                "Fetched packages for Android user 0. Profiles like work or cloned users may not appear. "
-                "Switch to the owner profile and try again if you need the full list."
-            )
         return packages
     
     def uninstall_package(self, package: str) -> bool:
@@ -302,19 +275,17 @@ class BloatwareRemover(ABC):
         
         try:
             result = self._run_adb(['shell', 'pm', 'dump', package_name], timeout=10, check=False)
-            primary_stdout = (result.stdout or "")
 
-            for line in primary_stdout.split('\n'):
+            for line in result.stdout.split('\n'):
                 if 'applicationLabel=' in line:
                     label = line.split('applicationLabel=')[1].strip()
                     if label:
                         self._app_name_cache[package_name] = label
                         return label
 
-            if 'labelRes=' in primary_stdout and 'labelRes=0x0' not in primary_stdout:
+            if 'labelRes=' in result.stdout and 'labelRes=0x0' not in result.stdout:
                 alt = self._run_adb(['shell', 'dumpsys', 'package', package_name], timeout=10, check=False)
-                alt_stdout = (alt.stdout or "")
-                for line in alt_stdout.split('\n'):
+                for line in alt.stdout.split('\n'):
                     if 'applicationLabel=' in line:
                         label = line.split('applicationLabel=')[1].strip()
                         if label:
@@ -322,8 +293,7 @@ class BloatwareRemover(ABC):
                             return label
 
             lookup = self._run_adb(['shell', 'pm', 'list', 'packages', '-f', package_name], timeout=10, check=False)
-            lookup_stdout = (lookup.stdout or "")
-            if lookup_stdout.strip():
+            if lookup.stdout.strip():
                 fallback = package_name.split('.')[-1].title()
                 self._app_name_cache[package_name] = fallback
                 return fallback
@@ -597,6 +567,8 @@ class BloatwareRemover(ABC):
             self.adb_path = adb_path
         if device_serial:
             self.device_serial = device_serial
+            if is_wifi_serial(device_serial):
+                self._last_wifi_endpoint = device_serial
 
     def _ensure_adb_path(self) -> str:
         """Resolve and cache the adb executable path."""
@@ -649,6 +621,90 @@ class BloatwareRemover(ABC):
                 return 'quit'
             print("Invalid option. Please type 'retry', 'test', or 'quit'.")
 
+    def _prompt_wifi_connection(self, message: str) -> bool:
+        while True:
+            reply = input(f"{message} (y/n): ").strip().lower()
+            if reply in {'y', 'yes'}:
+                return self._connect_via_wifi()
+            if reply in {'n', 'no', 'skip', 's'}:
+                return False
+            print("Please answer with 'y' or 'n'.")
+
+    def _connect_via_wifi(self) -> bool:
+        try:
+            adb_path = self._ensure_adb_path()
+        except ADBNotFoundError as exc:
+            print(str(exc))
+            return False
+
+        default_host = self._last_wifi_endpoint or ""
+        prompt = "Enter the device IP address (append :port if not using 5555): "
+        if default_host:
+            prompt = f"Enter the device IP address (press Enter for {default_host}): "
+
+        endpoint = input(prompt).strip()
+        if not endpoint and default_host:
+            endpoint = default_host
+
+        if not endpoint:
+            print("No address provided. Skipping Wi-Fi connection.")
+            return False
+
+        if ':' not in endpoint:
+            endpoint = f"{endpoint}:{DEFAULT_TCPIP_PORT}"
+
+        needs_pairing = None
+        while needs_pairing is None:
+            decision = input("Does the device display a pairing code? (y/n): ").strip().lower()
+            if decision in {'y', 'yes'}:
+                needs_pairing = True
+            elif decision in {'n', 'no'}:
+                needs_pairing = False
+            else:
+                print("Please answer with 'y' or 'n'.")
+
+        if needs_pairing:
+            pair_host = input(
+                "Enter the pairing IP:port shown on the device (leave blank to reuse the same host): "
+            ).strip()
+            if not pair_host:
+                pair_host = endpoint
+
+            pairing_code = input("Enter the six-digit pairing code: ").strip()
+            if not pairing_code:
+                print("Pairing code missing. Cannot continue with Wi-Fi pairing.")
+                return False
+
+            try:
+                pair_device(adb_path, pair_host, pairing_code)
+                print(f"Paired with {pair_host}.")
+            except ADBCommandError as exc:
+                print("Failed to pair with the device.")
+                if exc.stderr:
+                    print(exc.stderr.strip())
+                return False
+
+        try:
+            device = connect_wifi_device(adb_path, endpoint)
+        except ADBCommandError as exc:
+            print("Failed to connect over Wi-Fi.")
+            if exc.stderr:
+                print(exc.stderr.strip())
+            return False
+        except DeviceSelectionError as exc:
+            print("Connected but the device did not appear in the adb list.")
+            if exc.devices:
+                print("Currently visible devices:")
+                for device_state in exc.devices:
+                    print(f"  - {device_state.summary()}")
+            return False
+
+        self.adb_path = adb_path
+        self.device_serial = device.serial
+        self._last_wifi_endpoint = endpoint
+        print(f"Connected to {device.summary()} over Wi-Fi.")
+        return True
+
     def _show_device_state_instructions(self, device: DeviceState) -> None:
         """Display guidance for resolving common device connection states."""
 
@@ -656,26 +712,15 @@ class BloatwareRemover(ABC):
         state = device.state.lower().strip()
 
         if state == 'unauthorized':
-            print("    • Unlock the device and ensure USB debugging is enabled in Developer options.")
-            print("    • When prompted, tap 'Allow' to trust this computer for USB debugging.")
+            print("     Unlock the device and ensure USB debugging is enabled in Developer options.")
+            print("     When prompted, tap 'Allow' to trust this computer for USB debugging.")
         elif state == 'offline':
-            print("    • Reconnect the USB cable and toggle USB debugging off and on again.")
-            print("    • Ensure the device screen stays awake and unlocked.")
+            print("     Reconnect the USB cable and toggle USB debugging off and on again.")
+            print("     Ensure the device screen stays awake and unlocked.")
         elif state == 'recovery':
-            print("    • The device is in recovery mode. Boot into Android before running the remover.")
+            print("     The device is in recovery mode. Boot into Android before running the remover.")
         else:
-            print("    • Check the USB connection and confirm the device is unlocked with USB debugging enabled.")
-
-    @staticmethod
-    def _is_multi_user_permission_error(exc: ADBCommandError) -> bool:
-        """Detect whether an adb error indicates multi-user permission denial."""
-
-        text = f"{exc.stderr}\n{exc.stdout}".lower()
-        return (
-            'shell does not have permission to access user' in text
-            or 'securityexception' in text and 'user' in text and 'permission' in text
-            or 'user 999' in text and 'permission' in text
-        )
+            print("     Check the USB connection and confirm the device is unlocked with USB debugging enabled.")
 
     def _select_device(self, authorized_devices: List[DeviceState]) -> Optional[DeviceState]:
         """Select a device from the authorised list, prompting when needed."""
@@ -711,16 +756,8 @@ class BloatwareRemover(ABC):
 
             print("Selection out of range. Please try again.")
 
-    def _run_adb(
-        self,
-        args: List[str],
-        *,
-        timeout: int = 15,
-        check: bool = True,
-        retries: int = 3,
-        retry_delay: float = 2.0,
-    ) -> subprocess.CompletedProcess:
-        """Run an adb command for the selected device with retry support."""
+    def _run_adb(self, args: List[str], *, timeout: int = 15, check: bool = True) -> subprocess.CompletedProcess:
+        """Run an adb command for the selected device."""
 
         if self.test_mode:
             raise ADBCommandError("Attempted to execute adb command while in test mode")
@@ -732,34 +769,13 @@ class BloatwareRemover(ABC):
                 "No authorised device selected for adb operations", devices=[]
             )
 
-        attempts = max(1, retries)
-        last_error: Optional[ADBCommandError] = None
-
-        for attempt in range(1, attempts + 1):
-            try:
-                return run_command(
-                    adb_path,
-                    args,
-                    device_serial=self.device_serial,
-                    timeout=timeout,
-                    check=check,
-                )
-            except ADBCommandError as exc:
-                last_error = exc
-                if attempt >= attempts:
-                    break
-
-                self.logger.warning(
-                    "ADB command failed (attempt %d/%d): %s",
-                    attempt,
-                    attempts,
-                    exc,
-                )
-                if retry_delay > 0:
-                    time.sleep(retry_delay)
-
-        assert last_error is not None
-        raise last_error
+        return run_command(
+            adb_path,
+            args,
+            device_serial=self.device_serial,
+            timeout=timeout,
+            check=check,
+        )
 
     def manual_package_removal(self) -> None:
         """Allow users to remove a package by typing its name or app label"""
@@ -911,3 +927,4 @@ class BloatwareRemover(ABC):
                     return
             else:
                 print("Removal cancelled for the selected apps.")
+
