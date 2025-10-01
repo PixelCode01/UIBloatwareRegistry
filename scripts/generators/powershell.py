@@ -6,7 +6,7 @@ from typing import Iterable, Optional
 def generate(packages: Iterable[str], *, device_serial: Optional[str] = None) -> str:
     pkg_list = [pkg.strip() for pkg in packages if pkg.strip()]
     if not pkg_list:
-        return "# No packages selected"
+        return "Write-Output 'No packages selected'"
 
     serial = f" -s {device_serial}" if device_serial else ""
     lines: list[str] = []

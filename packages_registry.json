@@ -170,6 +170,17 @@
               "risk": "caution"
             }
           ]
+        },
+        "test_category": {
+          "name": "Test Category",
+          "description": "Test Category applications",
+          "packages": [
+            {
+              "name": "com.test.app",
+              "description": "Test Application",
+              "risk": "safe"
+            }
+          ]
         }
       }
     },
@@ -247,6 +258,11 @@
               "risk": "caution"
             }
           ]
+        },
+        "test_category": {
+          "name": "Test Category",
+          "description": "Test Category applications",
+          "packages": []
         }
       }
     },

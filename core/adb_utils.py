@@ -1,4 +1,3 @@
-"""Utility helpers for interacting with the Android Debug Bridge (adb)."""
 from __future__ import annotations
 
 import os

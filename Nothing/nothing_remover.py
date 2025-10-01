@@ -5,13 +5,10 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from core.bloatware_remover import BloatwareRemover
 
 class NothingRemover(BloatwareRemover):
-    """Nothing-specific bloatware remover"""
-    
-    def __init__(self, test_mode: bool = False):
-        super().__init__('Nothing', 'Nothing/nothing_config.json', test_mode)
+    def __init__(self, test_mode: bool = False, use_registry: bool = True):
+        super().__init__('Nothing', 'Nothing/nothing_config.json', test_mode, use_registry=use_registry)
     
     def _get_default_packages(self):
-        """Default Nothing bloatware configuration"""
         return {
             "categories": {
                 "nothing_safe": [

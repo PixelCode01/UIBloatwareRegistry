@@ -5,13 +5,10 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from core.bloatware_remover import BloatwareRemover
 
 class RealmeRemover(BloatwareRemover):
-    """Realme-specific bloatware remover"""
-    
-    def __init__(self, test_mode: bool = False):
-        super().__init__('Realme', 'Realme/realme_config.json', test_mode)
+    def __init__(self, test_mode: bool = False, use_registry: bool = True):
+        super().__init__('Realme', 'Realme/realme_config.json', test_mode, use_registry=use_registry)
     
     def _get_default_packages(self):
-        """Default Realme bloatware configuration"""
         return {
             "categories": {
                 "android_safe": [

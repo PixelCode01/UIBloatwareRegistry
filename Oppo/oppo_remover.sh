@@ -1,4 +1,5 @@
 #!/system/bin/sh
+# Auto-generated from packages_registry.json
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -23,277 +24,63 @@ print_header() {
     echo ""
 }
 
-check_environment() {
-    if [ -z "$SHIZUKU_SERVER_VERSION" ] && [ "$(id -u)" != "2000" ]; then
-        print_colored $RED "Warning: This script is designed for Shizuku environment."
-        print_colored $YELLOW "Make sure you're running this through Shizuku terminal."
-        echo ""
-        read -p "Continue anyway? (y/n): " choice
-        case "$choice" in
-            y|Y) ;;
-            *) exit 1 ;;
-        esac
-    fi
-}
-
-create_backup() {
-    print_colored $BLUE "Creating backup of installed packages..."
-    BACKUP_FILE="/sdcard/oppo_backup_$(date +%Y%m%d_%H%M%S).txt"
-    pm list packages > "$BACKUP_FILE"
-    if [ $? -eq 0 ]; then
-        print_colored $GREEN "Backup created: $BACKUP_FILE"
-    else
-        print_colored $RED "Failed to create backup!"
-        exit 1
-    fi
-}
-
 SAFE_PACKAGES="
-com.android.bips:Built-in Print Service
-com.android.bookmarkprovider:Browser bookmark storage
-com.android.egg:Android Easter Egg
-com.android.printspooler:Mobile printing service
-com.android.wallpaper.livepicker:Live wallpaper selector
-com.android.wallpaperbackup:Wallpaper backup service
-com.android.wallpapercropper:Wallpaper cropping tool
-com.caf.fmradio:FM Radio service
-com.coloros.aftersalesservice:After-sales service app
-com.coloros.childrenspace:Kids Space mode
-com.coloros.compass2:Compass application
-com.coloros.focusmode:Focus Mode for productivity
-com.coloros.gamespace:Game Center
-com.coloros.healthcheck:Device health checker
-com.coloros.healthservice:Device health service
-com.coloros.musiclink:Music Party sharing
-com.coloros.safesdkproxy:Phone Cleaner
-com.coloros.screenrecorder:Screen recording app
-com.coloros.speechassist:Voice assistant
-com.coloros.translate.engine:Translation service
-com.coloros.video:Video player
-com.coloros.wallpapers:Wallpaper collection
-com.coloros.widget.smallweather:Weather widget
-com.google.android.apps.googleassistant:Google Assistant
-com.google.android.apps.nbu.files:Files by Google
-com.google.android.apps.nbu.paisa.user:Google Pay
-com.google.android.apps.photos:Google Photos
-com.google.android.apps.wellbeing:Digital Wellbeing
-com.google.android.feedback:Google Feedback
-com.google.android.keep:Google Keep notes
-com.google.android.music:Google Play Music
-com.google.android.projection.gearhead:Android Auto
-com.google.android.soundpicker:Sound picker
-com.google.android.talk:Google Talk
-com.google.android.videos:Google Play Movies
-com.google.android.youtube:YouTube
-com.google.ar.core:Google ARCore
-com.google.ar.lens:Google Lens
-com.qualcomm.qti.optinoverlay:Qualcomm opt-in overlay
-com.qualcomm.qti.simcontacts:SIM contact management
+com.finshell.fin:FinShell Pay
 "
 
 CAUTION_PACKAGES="
-com.android.chrome:Google Chrome browser
-com.android.mms.service:SMS/MMS messaging service
-com.android.providers.calendar:Calendar data provider
-com.android.providers.partnerbookmarks:Chrome bookmarks
-com.android.providers.userdictionary:Keyboard dictionary
-com.coloros.alarmclock:Alarm and clock app
-com.coloros.assistantscreen:Smart Assistant
-com.coloros.backuprestore:Clone Phone backup
-com.coloros.calculator:Calculator app
-com.coloros.cloud:Oppo Cloud storage
-com.coloros.filemanager:File Manager
-com.coloros.floatassistant:Floating window assistant
-com.coloros.gallery3d:Gallery app
-com.coloros.securepay:Secure payment service
-com.coloros.smartsidebar:Smart Sidebar
-com.coloros.soundrecorder:Voice recorder
-com.coloros.weather.service:Weather service
-com.google.android.apps.maps:Google Maps
-com.google.android.apps.messaging:Google Messages
-com.google.android.calendar:Google Calendar
-com.google.android.documentsui:Files app
-com.google.android.gm:Gmail
-com.google.android.googlequicksearchbox:Google Search
-com.google.android.inputmethod.latin:Gboard keyboard
-com.google.android.contacts:Google Contacts
-com.mediatek.atci.service:AT command interface
-com.mediatek.connectivity:Connectivity service
-com.mediatek.dm:Device management
-com.mediatek.mtklogger:System logger
-com.mediatek.omacp:OMA client provisioning
-com.mediatek.simcontacts:SIM contacts
-com.mediatek.selftest:Hardware self-test
-com.mediatek.settings.ext:Settings extensions
-com.mediatek.voicecommand:Voice command service
 "
 
 DANGEROUS_PACKAGES="
-com.android.cellbroadcastreceiver:Emergency alerts system
-com.android.cellbroadcastreceiver.overlay.common:Emergency alerts overlay
-com.android.vpndialogs:VPN connection dialogs
-com.qualcomm.qti.ims:IMS service for calls
-com.qualcomm.qti.telephonyservice:Telephony service
-com.google.android.marvin.talkback:Accessibility service
-com.google.android.tts:Text-to-speech engine
 "
 
 remove_packages() {
     local packages="$1"
     local category="$2"
-    local count=0
-    local failed=0
-
     print_colored $BLUE "Removing $category packages..."
-
-    echo "$packages" | while IFS=':' read -r package desc; do
+    echo "$packages" | while IFS=':'  read -r package desc; do
         if [ -n "$package" ] && [ "$package" != "" ]; then
             echo "Removing: $desc ($package)"
-
             pm uninstall --user 0 "$package" 2>/dev/null
             if [ $? -eq 0 ]; then
                 print_colored $GREEN "Uninstalled: $package"
-                count=$((count + 1))
             else
                 pm disable-user --user 0 "$package" 2>/dev/null
                 if [ $? -eq 0 ]; then
                     print_colored $YELLOW "Disabled: $package"
-                    count=$((count + 1))
                 else
                     print_colored $RED "Failed: $package"
-                    failed=$((failed + 1))
                 fi
             fi
         fi
     done
-
-    echo ""
-    print_colored $GREEN "Processed packages in $category category"
     echo ""
 }
 
 interactive_removal() {
     print_colored $BLUE "=== INTERACTIVE PACKAGE REMOVAL ==="
     echo ""
-
-    print_colored $GREEN "SAFE packages (recommended to remove):"
-    echo "$SAFE_PACKAGES" | grep -v '^$' | while IFS=':' read -r package desc; do
-        if [ -n "$package" ]; then
-            echo "  - $desc"
-        fi
-    done
-    echo ""
-
     read -p "Remove SAFE packages? (y/n): " choice
     if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
         remove_packages "$SAFE_PACKAGES" "SAFE"
     fi
-
-    print_colored $YELLOW "CAUTION packages (may affect functionality):"
-    echo "$CAUTION_PACKAGES" | grep -v '^$' | while IFS=':' read -r package desc; do
-        if [ -n "$package" ]; then
-            echo "  - $desc"
-        fi
-    done
-    echo ""
-
     read -p "Remove CAUTION packages? (y/n): " choice
     if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
         remove_packages "$CAUTION_PACKAGES" "CAUTION"
     fi
-
-    print_colored $RED "DANGEROUS packages (NOT recommended):"
-    echo "$DANGEROUS_PACKAGES" | grep -v '^$' | while IFS=':' read -r package desc; do
-        if [ -n "$package" ]; then
-            echo "  - $desc"
-        fi
-    done
-    echo ""
-
     read -p "Remove DANGEROUS packages? (y/n): " choice
     if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
-        print_colored $RED "WARNING: Removing these packages may break device functionality!"
-        read -p "Are you absolutely sure? (yes/no): " confirm
+        print_colored $RED "WARNING: This may break device functionality!"
+        read -p "Are you sure? (yes/no): " confirm
         if [ "$confirm" = "yes" ]; then
             remove_packages "$DANGEROUS_PACKAGES" "DANGEROUS"
         fi
     fi
 }
 
-batch_removal() {
-    print_colored $BLUE "=== BATCH REMOVAL (SAFE PACKAGES ONLY) ==="
-    echo ""
-    print_colored $YELLOW "This will remove all SAFE Oppo bloatware packages."
-    print_colored $YELLOW "These are apps that can be safely removed without affecting core functionality."
-    echo ""
-
-    read -p "Continue with batch removal? (y/n): " choice
-    if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
-        remove_packages "$SAFE_PACKAGES" "SAFE"
-        print_colored $GREEN "Batch removal completed!"
-    else
-        print_colored $YELLOW "Batch removal cancelled."
-    fi
-}
-
-list_all_packages() {
-    print_colored $BLUE "=== ALL INSTALLED PACKAGES ==="
-    echo ""
-    print_colored $YELLOW "Listing all installed packages (this may take a moment)..."
-    pm list packages -f | sort
-    echo ""
-    print_colored $GREEN "Package listing completed."
-}
-
-show_menu() {
-    echo ""
-    print_colored $BLUE "=== OPPO BLOATWARE REMOVER MENU ==="
-    echo "1. Interactive removal (recommended)"
-    echo "2. Batch removal (remove all safe packages)"
-    echo "3. List all installed packages"
-    echo "4. Create backup only"
-    echo "5. Exit"
-    echo ""
-    read -p "Choose an option (1-5): " choice
-
-    case $choice in
-        1)
-            create_backup
-            interactive_removal
-            ;;
-        2)
-            create_backup
-            batch_removal
-            ;;
-        3)
-            list_all_packages
-            ;;
-        4)
-            create_backup
-            print_colored $GREEN "Backup created successfully!"
-            ;;
-        5)
-            print_colored $GREEN "Exiting Oppo Bloatware Remover."
-            exit 0
-            ;;
-        *)
-            print_colored $RED "Invalid option. Please choose 1-5."
-            show_menu
-            ;;
-    esac
-}
-
 main() {
     print_header
-    check_environment
-
-    if ! command -v pm >/dev/null 2>&1; then
-        print_colored $RED "Error: 'pm' command not found!"
-        print_colored $YELLOW "Make sure you're running this in a Shizuku terminal with proper permissions."
-        exit 1
-    fi
-
-    show_menu
+    interactive_removal
 }
 
 main

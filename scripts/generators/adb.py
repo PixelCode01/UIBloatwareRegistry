@@ -9,7 +9,7 @@ def generate(packages: Iterable[str], *, device_serial: Optional[str] = None) ->
         return "# No packages selected"
 
     prefix = f"adb -s {device_serial} shell" if device_serial else "adb shell"
-    lines = ["# Run these commands in a terminal"]
+    lines = []
     for pkg in pkg_list:
         lines.append(f"{prefix} pm uninstall --user 0 {pkg}")
     return "\n".join(lines)

@@ -146,18 +146,6 @@ Related to #
 
 
 
-## For Maintainers
-
-<!-- Maintainers: Check these before merging -->
-
-- [ ] Code review completed
-- [ ] Risk levels verified
-- [ ] Testing evidence provided and adequate
-- [ ] Documentation updated
-- [ ] No conflicts with existing data
-- [ ] JSON structure validated
-- [ ] Ready to merge
-
 ---
 
 **Note for contributors:** Please fill out all relevant sections. Incomplete PRs may be delayed or closed. If you're using the contribution tool (`python contribute.py`), it automatically formats everything correctly!

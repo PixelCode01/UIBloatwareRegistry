@@ -1,106 +1,56 @@
-# Xiaomi Bloatware List
+# Xiaomi Bloatware Package List
 
-Android Bloatware on Xiaomi Phones:
+This document contains a comprehensive list of bloatware packages found on Xiaomi devices.
+Each package is categorized by risk level and includes descriptions to help you make informed removal decisions.
 
-- com.android.bips: Default Printing Service
+**Auto-generated from packages_registry.json**
 
-- com.android.bookmarkprovider: Bookmark Provider
+## Risk Levels
+- **SAFE**: Can be removed without affecting core functionality
+- **CAUTION**: May affect some features, remove with care
+- **DANGEROUS**: Critical system components, removal may cause instability
 
-- com.android.browser: Web Browser
+## MIUI Apps
 
-- com.android.calendar: Calendar app
+*Xiaomi's MIUI system applications*
 
-- com.android.cellbroadcastreceiver
+### Safe to Remove
+- `com.mi.android.globalpersonalassistant` - Mi Assistant
+- `com.mi.globalTrendNews` - Mi News
+- `com.mi.health` - Mi Health
 
-- com.android.cellbroadcastreceiver.overlay.common
+### Use Caution
+- `com.mi.android.globalFileexplorer` - Mi File Manager
 
-- com.android.chrome: Chrome Browser
+### Dangerous to Remove
+- `com.mi.android.globallauncher` - Mi Launcher
 
-- com.android.deskclock: Stock Clock app
+## Google Apps
 
-- com.android.dreams.basic: Screensaver app
+*Pre-installed Google applications*
 
-- com.android.dreams.phototable: Screensaver app
+### Safe to Remove
+- `com.google.android.apps.docs` - Google Docs
+- `com.google.android.apps.photos` - Google Photos
+- `com.google.android.apps.meetings` - Google Meet
+- `com.google.android.music` - Google Play Music
 
-- com.android.egg: Android Easter Egg
+### Use Caution
+- `com.google.android.apps.maps` - Google Maps
+- `com.google.android.gm` - Gmail
+- `com.google.android.youtube` - YouTube
 
-- com.android.emergency: SOS Calling
+## Test Category
 
-- com.android.hotwordenrollment.okgoogle: Google Assistant
+*Test Category applications*
 
-- com.android.mms: MMS app
+### Safe to Remove
+- `com.test.endtoend` - End to End Test
 
-- com.android.mms.service: MMS
+## Removal Notes
 
-- com.android.printspooler: Printing service
-
-- com.android.statementservice: Checks APK files
-
-- com.android.stk: SIM Tool-kit
-
-- com.android.thememanager
-
-- com.android.thememanager.module
-
-- com.android.wallpaper.livepicker: Live wallpaper
-
-- com.android.wallpaperbackup: Wallpaper backup feature
-
-- com.android.wallpapercropper: Wallpaper cropping feature
-
-Google Bloatware on Xiaomi Phones:
-
-- com.google.android.apps.docs: Google Docs
-
-- com.google.android.apps.maps: Google Maps
-
-- com.google.android.apps.photos: Google Photos
-
-- com.google.android.apps.meetings: Google Meet
-
-- com.google.android.apps.wellbeing: Digital Wellbeing
-
-- com.google.android.feedback: Feedback app
-
-- com.google.android.gm: Gmail
-
-- com.google.android.gms: Gmail service
-
-- com.google.android.gms.location.history: Gmail location service
-
-- com.google.android.googlequicksearchbox: Google Quick Search
-
-- com.google.android.inputmethod.latin: Gboard
-
-- com.google.android.marvin.talkback: Talkback feature
-
-- com.google.android.music: Google Play Music
-
-- com.google.android.printservice.recommendation: Mobile Printing
-
-- com.google.android.syncadapters.calendar: Calendar Sync
-
-- com.google.android.tts: Text-to-speech
-
-- com.google.android.videos: Google Play Movies & TV
-
-- com.google.android.youtube: Youtube
-
-- com.google.ar.lens: AR Lens
-
-MIUI Bloatware:
-
-- com.mfashiongallery.emag
-
-- com.mi.android.globalFileexplorer: Mi File Manager
-
-- com.mi.android.globallauncher: Mi Launcher
-
-- com.mi.android.globalpersonalassistant
-
-- com.mi.globalTrendNews
-
-- com.mi.health: Mi Health
-
-Please note that this is not an exhaustive list, and the availability of bloatware may vary depending on the specific Xiaomi phone model and the MIUI version installed.
-
+- Always create a backup before removing any packages
+- Test removals on a non-primary device first
+- Some apps may reinstall after system updates
+- Factory reset will restore all removed applications
+- Use the interactive removal mode for safer operation

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Build script for creating standalone executables."""
 
 import subprocess
+
 
 def run_command(cmd, cwd=None):
     try:

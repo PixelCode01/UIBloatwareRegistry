@@ -1,9 +1,3 @@
-"""
-Package Registry Manager
-
-This module provides utilities for managing the centralized bloatware package registry.
-"""
-
 import json
 import os
 from typing import Dict, List, Optional, Any
@@ -176,13 +170,41 @@ class PackageRegistry:
         for brand_id in brands_to_search:
             packages = self.get_all_packages_flat(brand_id)
             for package in packages:
-                if (query_lower in package.get('name', '').lower() or 
-                    query_lower in package.get('description', '').lower()):
+                package_name = package.get('name', '').lower()
+                description = package.get('description', '').lower()
+                category = package.get('category', '').lower()
+                
+                # Search in multiple fields: name, description, category
+                # Also search in package name parts (split by dots)
+                name_parts = package_name.split('.')
+                
+                if (query_lower in package_name or 
+                    query_lower in description or
+                    query_lower in category or
+                    any(query_lower in part for part in name_parts)):
                     package_copy = package.copy()
                     package_copy['brand'] = brand_id
                     results.append(package_copy)
         
         return results
+    
+    def get_common_search_terms(self) -> List[str]:
+        """Get a list of common search terms from the registry"""
+        terms = set()
+        
+        for brand_id in self.get_brands():
+            packages = self.get_all_packages_flat(brand_id)
+            for package in packages:
+                # Extract key terms from descriptions
+                desc = package.get('description', '')
+                # Split on spaces and common separators
+                words = desc.lower().replace(',', ' ').replace('-', ' ').split()
+                for word in words:
+                    if len(word) > 3:  # Only words longer than 3 chars
+                        terms.add(word)
+        
+        # Sort and return top terms
+        return sorted(list(terms))[:20]
 
 
 def get_registry() -> PackageRegistry:

@@ -16,8 +16,8 @@ from core.adb_utils import (
     run_command,
 )
 
+
 class DeviceDetector:
-    
     BRAND_PATTERNS = {
         'samsung': [r'samsung', r'sm-', r'galaxy'],
         'xiaomi': [r'xiaomi', r'redmi', r'poco', r'mi '],
@@ -470,8 +470,8 @@ class DeviceDetector:
             for device in offline_wifi:
                 try:
                     disconnect_device(self.adb_path, device.serial)
-                except:
-                    pass  # Ignore errors during cleanup
+                except Exception:
+                    pass
 
     def _connect_via_wifi(self) -> bool:
         if not self.adb_path:

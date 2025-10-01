@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-"""Generate SHA256 hashes for release files"""
 
 import hashlib
 import os
-import sys
+
 
 def calculate_sha256(file_path):
     sha256_hash = hashlib.sha256()

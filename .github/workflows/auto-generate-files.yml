@@ -1,0 +1,53 @@
+name: Auto-Generate Brand Files
+
+on:
+  push:
+    paths:
+      - 'packages_registry.json'
+    branches:
+      - main
+  pull_request:
+    paths:
+      - 'packages_registry.json'
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Generate brand files
+        run: |
+          python scripts/generate_brand_files.py --all
+      
+      - name: Check for changes
+        id: git-check
+        run: |
+          git diff --exit-code || echo "changes=true" >> $GITHUB_OUTPUT
+      
+      - name: Commit and push changes
+        if: steps.git-check.outputs.changes == 'true' && github.event_name == 'push'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "Auto-generate brand files from registry [skip ci]"
+          git push
+      
+      - name: Commit changes to PR
+        if: steps.git-check.outputs.changes == 'true' && github.event_name == 'pull_request'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "Auto-generate brand files from registry"
+          git push origin HEAD:${{ github.head_ref }}

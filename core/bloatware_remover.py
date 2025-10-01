@@ -25,6 +25,7 @@ try:
 except ImportError:
     REGISTRY_AVAILABLE = False
 
+
 class BloatwareRemover(ABC):
     def __init__(self, brand: str, config_file: str = None, test_mode: bool = False, use_registry: bool = True):
         self.brand = brand
@@ -163,7 +164,6 @@ class BloatwareRemover(ABC):
                 
                 if authorized and offline_wifi and not other_pending:
                     print("\nNote: Ignoring stale offline Wi-Fi connections.")
-                    pass
                 elif offline_wifi and not other_pending:
                     print("\nDetected Wi-Fi device(s) that need authorization:")
                     for device in offline_wifi:
@@ -829,7 +829,6 @@ class BloatwareRemover(ABC):
         )
 
     def manual_package_removal(self) -> None:
-        """Allow users to remove a package by typing its name or app label"""
         if not self.check_device_connection():
             return
 

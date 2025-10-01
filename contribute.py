@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-"""Package Contribution Tool"""
 
 import sys
 import argparse
@@ -173,6 +172,17 @@ class ContributionTool:
             if self.registry.add_package(brand, category, package_data):
                 self.registry.save_registry()
                 print("\nPackage added successfully!")
+                
+                # Auto-regenerate brand files
+                print(f"\nRegenerating files for {brand}...")
+                try:
+                    from scripts.generate_brand_files import generate_all_files_for_brand
+                    if generate_all_files_for_brand(brand):
+                        print("Brand files regenerated successfully!")
+                except Exception as e:
+                    print(f"Warning: Could not regenerate files: {e}")
+                    print(f"Please run manually: python scripts/generate_brand_files.py --brand {brand}")
+                
                 print("\nNext steps:")
                 print("1. Test the package removal on a device")
                 print("2. Commit your changes")
@@ -183,7 +193,6 @@ class ContributionTool:
             print("\nAddition cancelled.")
     
     def update_package_interactive(self, brand: Optional[str] = None, package_name: Optional[str] = None):
-        """Interactive package update"""
         print("\n" + "=" * 60)
         print("Update Package")
         print("=" * 60)
@@ -265,13 +274,22 @@ class ContributionTool:
             if self.registry.update_package(brand, package_name, updates):
                 self.registry.save_registry()
                 print("\nPackage updated successfully!")
+                
+                # Auto-regenerate brand files
+                print(f"\nRegenerating files for {brand}...")
+                try:
+                    from scripts.generate_brand_files import generate_all_files_for_brand
+                    if generate_all_files_for_brand(brand):
+                        print("Brand files regenerated successfully!")
+                except Exception as e:
+                    print(f"Warning: Could not regenerate files: {e}")
+                    print(f"Please run manually: python scripts/generate_brand_files.py --brand {brand}")
             else:
                 print("\nFailed to update package.")
         else:
             print("\nUpdate cancelled.")
     
     def remove_package_interactive(self):
-        """Interactive package removal"""
         print("\n" + "=" * 60)
         print("Remove Package")
         print("=" * 60)
@@ -312,13 +330,22 @@ class ContributionTool:
             if self.registry.remove_package(brand, package_name):
                 self.registry.save_registry()
                 print("\nPackage removed successfully!")
+                
+                # Auto-regenerate brand files
+                print(f"\nRegenerating files for {brand}...")
+                try:
+                    from scripts.generate_brand_files import generate_all_files_for_brand
+                    if generate_all_files_for_brand(brand):
+                        print("Brand files regenerated successfully!")
+                except Exception as e:
+                    print(f"Warning: Could not regenerate files: {e}")
+                    print(f"Please run manually: python scripts/generate_brand_files.py --brand {brand}")
             else:
                 print("\nFailed to remove package.")
         else:
             print("\nRemoval cancelled.")
     
     def search_packages_interactive(self):
-        """Interactive package search"""
         print("\n" + "=" * 60)
         print("Search Packages")
         print("=" * 60)
@@ -332,6 +359,19 @@ class ContributionTool:
         
         if not results:
             print(f"\nNo packages found matching '{query}'.")
+            
+            # Provide helpful suggestions
+            print("\nSearch tips:")
+            print("  - Search covers package names, descriptions, and categories")
+            print("  - Try partial words (e.g., 'bix' for Bixby)")
+            print("  - Try package name parts (e.g., 'spay', 'ecomm')")
+            print("  - Try brand names (samsung, xiaomi, google, etc.)")
+            
+            # Show some popular search examples
+            print("\nPopular search terms:")
+            examples = ['google', 'bixby', 'pay', 'shop', 'maps', 'samsung', 'voice', 'email']
+            print("  " + ", ".join(examples))
+            
             return
         
         print(f"\nFound {len(results)} package(s):")
@@ -345,7 +385,6 @@ class ContributionTool:
             print(f"   Risk: {package.get('risk')}")
     
     def view_brands(self):
-        """View all supported brands"""
         print("\n" + "=" * 60)
         print("Supported Brands")
         print("=" * 60)
@@ -361,7 +400,6 @@ class ContributionTool:
             print(f"  Packages: {package_count}")
     
     def view_risk_guidelines(self):
-        """View risk level guidelines"""
         print("\n" + "=" * 60)
         print("Risk Level Guidelines")
         print("=" * 60)
@@ -374,7 +412,6 @@ class ContributionTool:
     
     def add_package_cli(self, brand: str, category: str, package_name: str,
                        description: str, risk: str):
-        """Add package via command line arguments"""
         package_data = {
             'name': package_name,
             'description': description,
@@ -384,16 +421,31 @@ class ContributionTool:
         if self.registry.add_package(brand, category, package_data):
             self.registry.save_registry()
             print(f"Successfully added {package_name} to {brand}/{category}")
+            
+            # Auto-regenerate brand files
+            try:
+                from scripts.generate_brand_files import generate_all_files_for_brand
+                generate_all_files_for_brand(brand)
+            except Exception as e:
+                print(f"Warning: Could not regenerate files: {e}")
+            
             return True
         else:
             print(f"Failed to add {package_name}")
             return False
     
     def remove_package_cli(self, brand: str, package_name: str):
-        """Remove package via command line arguments"""
         if self.registry.remove_package(brand, package_name):
             self.registry.save_registry()
             print(f"Successfully removed {package_name} from {brand}")
+            
+            # Auto-regenerate brand files
+            try:
+                from scripts.generate_brand_files import generate_all_files_for_brand
+                generate_all_files_for_brand(brand)
+            except Exception as e:
+                print(f"Warning: Could not regenerate files: {e}")
+            
             return True
         else:
             print(f"Failed to remove {package_name}")

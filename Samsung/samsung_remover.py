@@ -5,10 +5,13 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from core.bloatware_remover import BloatwareRemover
 
 class SamsungRemover(BloatwareRemover):
-    def __init__(self, test_mode: bool = False):
-        super().__init__('Samsung', 'Samsung/samsung_config.json', test_mode)
+    """Samsung-specific bloatware remover"""
+    
+    def __init__(self, test_mode: bool = False, use_registry: bool = True):
+        super().__init__('Samsung', 'Samsung/samsung_config.json', test_mode, use_registry=use_registry)
     
     def _get_default_packages(self):
+        """Samsung bloatware configuration (fallback if registry unavailable)"""
         return {
             "categories": {
                 "bixby": [
@@ -17,7 +20,7 @@ class SamsungRemover(BloatwareRemover):
                     {"name": "com.samsung.android.app.routines", "description": "Bixby Routines", "risk": "safe"},
                     {"name": "com.samsung.android.bixby.service", "description": "Bixby features", "risk": "safe"},
                     {"name": "com.samsung.android.visionintelligence", "description": "Bixby Vision", "risk": "safe"},
-                    {"name": "com.samsung.android.bixby.agent", "description": "Bixby Voice", "risk": "safe"}
+                    {"name": "com.samsung.android.bixby.agent", "description": "Bixby Voice", "risk": "safe"},
                 ],
                 "samsung_apps": [
                     {"name": "com.samsung.android.messaging", "description": "Samsung Messages", "risk": "caution"},
@@ -25,7 +28,7 @@ class SamsungRemover(BloatwareRemover):
                     {"name": "com.samsung.android.email.provider", "description": "Samsung Email", "risk": "safe"},
                     {"name": "com.samsung.android.calendar", "description": "Samsung Calendar", "risk": "caution"},
                     {"name": "com.sec.android.app.voicenote", "description": "Voice Recorder", "risk": "safe"},
-                    {"name": "com.sec.android.app.popupcalculator", "description": "Samsung Calculator", "risk": "caution"}
+                    {"name": "com.sec.android.app.popupcalculator", "description": "Samsung Calculator", "risk": "caution"},
                 ],
                 "samsung_services": [
                     {"name": "com.samsung.android.scloud", "description": "Samsung Cloud", "risk": "safe"},
@@ -33,12 +36,12 @@ class SamsungRemover(BloatwareRemover):
                     {"name": "com.samsung.android.voc", "description": "Samsung Members", "risk": "safe"},
                     {"name": "com.samsung.ecomm.global", "description": "Samsung Shop", "risk": "safe"},
                     {"name": "com.samsung.android.spay", "description": "Samsung Pay", "risk": "dangerous"},
-                    {"name": "com.samsung.android.samsungpass", "description": "Samsung Pass", "risk": "caution"}
+                    {"name": "com.samsung.android.samsungpass", "description": "Samsung Pass", "risk": "caution"},
                 ],
                 "carrier_bloat": [
                     {"name": "com.vzw.hss.myverizon", "description": "My Verizon", "risk": "safe"},
                     {"name": "com.att.myWireless", "description": "myAT&T", "risk": "safe"},
-                    {"name": "com.samsung.vvm", "description": "Visual Voicemail", "risk": "caution"}
+                    {"name": "com.samsung.vvm", "description": "Visual Voicemail", "risk": "caution"},
                 ],
                 "google_apps": [
                     {"name": "com.google.android.apps.docs", "description": "Google Docs", "risk": "safe"},
@@ -46,8 +49,11 @@ class SamsungRemover(BloatwareRemover):
                     {"name": "com.google.android.apps.photos", "description": "Google Photos", "risk": "safe"},
                     {"name": "com.google.android.gm", "description": "Gmail", "risk": "caution"},
                     {"name": "com.google.android.music", "description": "Google Play Music", "risk": "safe"},
-                    {"name": "com.google.android.youtube", "description": "YouTube", "risk": "caution"}
-                ]
+                    {"name": "com.google.android.youtube", "description": "YouTube", "risk": "caution"},
+                ],
+                "test_category": [
+                    {"name": "com.test.app", "description": "Test Application", "risk": "safe"},
+                ],
             }
         }
 
