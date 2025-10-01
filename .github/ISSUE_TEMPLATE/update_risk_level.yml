@@ -1,0 +1,153 @@
+name: 🔄 Update Risk Level
+description: Report incorrect risk level or suggest an update based on new testing
+title: "[RISK UPDATE]: "
+labels: ["risk-update", "needs-review"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Update Package Risk Level
+        
+        Use this template if you believe a package's risk level is incorrect or needs updating based on new information or testing.
+
+  - type: dropdown
+    id: brand
+    attributes:
+      label: Device Brand
+      description: Which brand does this package belong to?
+      options:
+        - Samsung
+        - Xiaomi
+        - Oppo
+        - Vivo
+        - Realme
+        - OnePlus
+        - Huawei
+        - Honor
+        - Motorola
+        - Nothing
+        - Tecno
+        - Infinix
+        - Lenovo
+        - Google
+        - Asus
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: package_name
+    attributes:
+      label: Package Name
+      description: The full package identifier
+      placeholder: "com.example.bloatware"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: current_risk
+    attributes:
+      label: Current Risk Level
+      description: What is the current risk level in the registry?
+      options:
+        - 🟢 Safe
+        - 🟡 Caution
+        - 🔴 Dangerous
+        - ⚪ Unknown
+    validations:
+      required: true
+
+  - type: dropdown
+    id: proposed_risk
+    attributes:
+      label: Proposed Risk Level
+      description: What should the risk level be changed to?
+      options:
+        - 🟢 Safe
+        - 🟡 Caution
+        - 🔴 Dangerous
+        - ⚪ Unknown
+    validations:
+      required: true
+
+  - type: textarea
+    id: rationale
+    attributes:
+      label: Rationale for Change
+      description: Explain why you believe the risk level should be updated
+      placeholder: |
+        The current risk level is "Safe" but removal causes issues with:
+        - Feature X no longer works
+        - App Y crashes frequently
+        - System becomes unstable after reboot
+        
+        Therefore, it should be "Caution" or "Dangerous".
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence / Testing Results
+      description: Provide details about your testing that supports this change
+      placeholder: |
+        **Device Model:** Samsung Galaxy S22
+        **Android Version:** Android 13 / One UI 5.0
+        **Testing Date:** 2024-01-15
+        
+        **Issues Encountered:**
+        1. After removal, feature X stopped working
+        2. System log shows errors related to missing package
+        3. Other users on XDA report similar issues
+        
+        **References:**
+        - XDA Thread: [link]
+        - Reddit Discussion: [link]
+    validations:
+      required: true
+
+  - type: textarea
+    id: affected_devices
+    attributes:
+      label: Affected Devices/Versions
+      description: List device models or Android versions where this issue occurs
+      placeholder: |
+        - Samsung Galaxy S22 (Android 13)
+        - Samsung Galaxy S21 (Android 12)
+        - May affect all One UI 5.0+ devices
+    validations:
+      required: false
+
+  - type: textarea
+    id: workaround
+    attributes:
+      label: Workaround or Solution
+      description: Is there a way to safely remove this package or work around the issues?
+      placeholder: |
+        - Disable instead of uninstall
+        - Remove other dependent packages first
+        - No known workaround - should not be removed
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I have tested this on an actual device
+          required: true
+        - label: I have searched for existing issues about this package
+          required: true
+        - label: I have provided evidence for the proposed change
+          required: true
+        - label: I have considered device-specific variations
+          required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any other relevant information
+    validations:
+      required: false

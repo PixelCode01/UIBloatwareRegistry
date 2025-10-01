@@ -1,0 +1,175 @@
+name: 🆕 New Package Entry
+description: Submit a new bloatware package to add to the registry
+title: "[NEW PACKAGE]: "
+labels: ["enhancement", "new-package"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Thank you for contributing to UIBloatwareRegistry!
+        
+        Please fill out this form to add a new bloatware package to the registry.
+        Make sure you've tested the package removal safely before submitting.
+
+  - type: dropdown
+    id: brand
+    attributes:
+      label: Device Brand
+      description: Which brand does this package belong to?
+      options:
+        - Samsung
+        - Xiaomi
+        - Oppo
+        - Vivo
+        - Realme
+        - OnePlus
+        - Huawei
+        - Honor
+        - Motorola
+        - Nothing
+        - Tecno
+        - Infinix
+        - Lenovo
+        - Google
+        - Asus
+        - Other (specify in description)
+    validations:
+      required: true
+
+  - type: input
+    id: package_name
+    attributes:
+      label: Package Name
+      description: The full package identifier
+      placeholder: "com.example.bloatware"
+    validations:
+      required: true
+
+  - type: input
+    id: description
+    attributes:
+      label: Description
+      description: Brief, user-friendly description of what this app/service does
+      placeholder: "Bixby Voice Assistant"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      description: What category does this package belong to?
+      options:
+        - System Apps
+        - OEM Apps (Samsung, Xiaomi, etc.)
+        - OEM Services
+        - Google Apps
+        - Carrier Apps
+        - Social Media
+        - Gaming
+        - Shopping
+        - News/Entertainment
+        - Productivity
+        - Voice Assistant
+        - Cloud Services
+        - Other (specify below)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: risk
+    attributes:
+      label: Risk Level
+      description: How safe is it to remove this package?
+      options:
+        - 🟢 Safe - No system functionality affected
+        - 🟡 Caution - May affect some functionality
+        - 🔴 Dangerous - May cause system instability
+        - ⚪ Unknown - Needs more testing
+    validations:
+      required: true
+
+  - type: textarea
+    id: risk_rationale
+    attributes:
+      label: Risk Level Rationale
+      description: Explain why you chose this risk level
+      placeholder: |
+        - System Integration: Low
+        - Dependencies: None found
+        - User Impact: Only affects Bixby features
+        - Recovery: Easy (can reinstall)
+        - Testing: Removed on 3 devices without issues
+    validations:
+      required: true
+
+  - type: textarea
+    id: testing
+    attributes:
+      label: Testing Information
+      description: Provide details about your testing
+      placeholder: |
+        **Device Model:** Samsung Galaxy S21
+        **Android Version:** Android 12 / One UI 4.1
+        **Testing Method:** Removed via ADB (pm uninstall --user 0)
+        
+        **Tests Performed:**
+        - Basic phone functions: ✅ Working
+        - Affected features: Bixby not launching (expected)
+        - System stability: ✅ No issues
+        - Boot time: ✅ Normal
+        - Other apps: ✅ No crashes
+        
+        **Recovery Tested:** Yes, successfully reinstalled with cmd package install-existing
+    validations:
+      required: true
+
+  - type: textarea
+    id: affected_features
+    attributes:
+      label: Affected Features
+      description: What features or functionality will be affected if this package is removed?
+      placeholder: |
+        - Bixby voice commands will not work
+        - Bixby button will be non-functional
+        - No impact on other system features
+    validations:
+      required: false
+
+  - type: input
+    id: alternatives
+    attributes:
+      label: Alternative Apps (Optional)
+      description: Suggest alternative apps if this package provides essential functionality
+      placeholder: "Google Assistant, Alexa"
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Submission Checklist
+      description: Please confirm you've completed these steps
+      options:
+        - label: I have tested the package removal on an actual device
+          required: true
+        - label: I have read the risk level guidelines in CONTRIBUTING.md
+          required: true
+        - label: The package information is accurate and complete
+          required: true
+        - label: I have documented any issues encountered during testing
+          required: true
+        - label: I can restore the package if needed
+          required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Information
+      description: Any other information that might be helpful
+      placeholder: |
+        - Related packages that should also be removed
+        - Known issues or warnings
+        - Links to relevant discussions or documentation
+    validations:
+      required: false

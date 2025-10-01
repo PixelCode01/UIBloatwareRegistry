@@ -1,94 +1,277 @@
 # Contributing to UIBloatwareRegistry
 
-Thank you for considering contributing to UIBloatwareRegistry! We appreciate your interest in making this repository better. Please take a moment to review the following guidelines to ensure a smooth and effective contribution process.
+Thank you for considering contributing to UIBloatwareRegistry! We appreciate your interest in making this repository better. This guide will help you contribute safely and effectively.
 
 ## Table of Contents
 
-- [Contributing to UIBloatwareRegistry](#contributing-to-uibloatwareregistry)
+- [Quick Start](#quick-start)
+- [How to Identify Bloatware Packages](#how-to-identify-bloatware-packages)
+- [How to Test Package Removal](#how-to-test-package-removal)
+- [Risk Level Guidelines](#risk-level-guidelines)
+- [Adding New Packages](#adding-new-packages)
+- [Submitting Contributions](#submitting-contributions)
+- [Code Guidelines](#code-guidelines)
+- [Issue Reporting](#issue-reporting)
+- [License](#license)
 
-  - [Table of Contents](#table-of-contents)
+## Quick Start
 
-  - [How Can You Contribute?](#how-can-you-contribute)
+We've made contributing easier! Use our contribution tool:
 
-  - [Submitting Contributions](#submitting-contributions)
+```bash
+python contribute.py
+```
 
-  - [Code Guidelines](#code-guidelines)
+This interactive tool will guide you through adding new packages to the registry.
 
-  - [Issue Reporting](#issue-reporting)
+## How to Identify Bloatware Packages
 
-  - [Feature Requests](#feature-requests)
+### Step 1: List All Packages on Your Device
 
-  - [Feedback](#feedback)
+Connect your device via ADB and run:
 
-  - [License](#license)
+```bash
+adb shell pm list packages
+```
 
-## How Can You Contribute?
+### Step 2: Get Package Details
 
-There are several ways you can contribute to UIBloatwareRegistry:
+To understand what a package does:
 
-- **Adding Bloatware Information**: If you come across new bloatware applications on different Android devices, feel free to add them to the relevant Markdown files in the repository. Make sure to provide accurate information about the bloatware package name and its associated details.
+```bash
+# Get app name
+adb shell pm dump <package.name> | grep -i "label"
 
-- **Removing Deprecated Bloatware**: If any of the listed bloatware applications are no longer present on the respective devices or have become obsolete, you can submit a pull request to remove them from the repository.
+# Check if it's a system app
+adb shell pm list packages -s | grep <package.name>
 
-- **Updating Existing Information**: If you have more up-to-date information or additional details about any existing bloatware applications, you can contribute by updating the relevant Markdown files.
+# See the package path
+adb shell pm path <package.name>
+```
 
-- **Bug Fixes**: If you find any bugs or issues within the repository, you can submit bug fixes or improvements.
+### Step 3: Research the Package
 
-- **Documentation**: Improving the documentation, such as clarifying instructions, adding examples, or enhancing the overall readability, is always appreciated.
+- Search the package name online
+- Check XDA forums and Reddit r/Android
+- Look for the app in the Play Store
+- Review similar bloatware lists
+
+### Safety Checklist
+
+✅ **DO identify packages that are:**
+- Manufacturer-specific apps you don't use
+- Carrier-installed apps
+- Duplicate apps (when alternatives are available)
+- Promotional or shopping apps
+- OEM assistants you don't use
+
+❌ **DO NOT identify packages that are:**
+- Core system services
+- Android framework components
+- Google Play Services (unless you know what you're doing)
+- Security or authentication services you use
+
+## How to Test Package Removal
+
+### Testing Safely
+
+1. **Use Test Mode First**:
+   ```bash
+   python main.py --test
+   ```
+
+2. **Remove for Current User Only**:
+   ```bash
+   adb shell pm uninstall --user 0 <package.name>
+   ```
+   This doesn't completely remove the package - it can be restored!
+
+3. **Test Device Functionality**:
+   - Make/receive calls
+   - Send/receive SMS
+   - Use camera
+   - Connect to WiFi
+   - Use fingerprint/face unlock
+   - Test any features related to the removed package
+
+4. **Restore if Needed**:
+   ```bash
+   adb shell cmd package install-existing <package.name>
+   ```
+
+### Test Duration
+
+- Test for at least **24-48 hours** after removal
+- Restart your device during testing
+- Try various scenarios related to the removed package
+
+## Risk Level Guidelines
+
+Choose the appropriate risk level for each package:
+
+### 🟢 Safe
+**Definition**: Can be removed without affecting system functionality
+
+**Criteria**:
+- Optional apps (games, shopping, news)
+- Duplicate functionality (manufacturer apps when Google alternatives exist)
+- Services you don't use (Bixby if you don't use it)
+- Carrier bloatware
+
+**Examples**:
+- `com.samsung.android.game.gamehome` - Game Launcher
+- `com.amazon.mShop.android.shopping` - Amazon Shopping
+- `com.netflix.mediaclient` - Netflix (pre-installed)
+
+### 🟡 Caution
+**Definition**: May affect some functionality, but system remains stable
+
+**Criteria**:
+- Default apps with system integration (browser, messaging)
+- Apps that other apps might depend on
+- Features that some users rely on
+
+**Examples**:
+- `com.sec.android.app.sbrowser` - Samsung Internet
+- `com.samsung.android.messaging` - Samsung Messages
+- `com.google.android.apps.maps` - Google Maps
+
+### 🔴 Dangerous
+**Definition**: May cause system instability, boot loops, or critical feature loss
+
+**Criteria**:
+- Core system services
+- Authentication services
+- Payment systems
+- Device admin apps
+- System frameworks
+
+**Examples**:
+- `com.samsung.android.spay` - Samsung Pay
+- `com.google.android.gms` - Google Play Services
+- `com.android.systemui` - System UI
+
+### ⚫ Unknown
+**Definition**: Not yet tested or categorized
+
+**Usage**: Temporary classification until proper testing is done
+
+## Adding New Packages
+
+### Using the Contribution Tool (Recommended)
+
+```bash
+python contribute.py
+```
+
+Follow the interactive prompts to add packages safely.
+
+### Manual Method
+
+1. Edit `packages_registry.json`
+2. Add your package under the appropriate brand and category:
+
+```json
+{
+  "name": "com.example.bloatware",
+  "description": "Example Bloatware App",
+  "risk": "safe"
+}
+```
+
+3. Test your changes locally
+4. Submit a pull request
+
+### Required Information
+
+When adding a package, provide:
+
+1. **Package Name**: Full package identifier (e.g., `com.samsung.android.app.example`)
+2. **Description**: Clear, concise description (e.g., "Samsung Example App")
+3. **Risk Level**: Based on guidelines above (`safe`, `caution`, `dangerous`)
+4. **Category**: Appropriate category for the package
+5. **Testing Evidence**: Brief description of how you tested it
+
+### Risk Tier Rationale Template
+
+When proposing a risk level, explain your reasoning:
+
+```
+**Package**: com.example.app
+**Proposed Risk**: safe/caution/dangerous
+**Rationale**:
+- Tested removal on [Device Model, Android Version]
+- Observed behavior: [What happened after removal]
+- Affects: [List affected features, or "No issues found"]
+- Restore test: [Yes/No - was restore successful?]
+- Testing duration: [How long you tested]
+- Additional context: [Any other relevant information]
+```
 
 ## Submitting Contributions
 
-To contribute to UIBloatwareRegistry, please follow these steps:
+1. **Fork the repository** on GitHub
 
-1. Fork the repository on GitHub.
+2. **Create a new branch** with a descriptive name:
+   ```bash
+   git checkout -b add-samsung-game-launcher
+   ```
 
-2. Create a new branch with a descriptive name for your feature/fix.
+3. **Make your changes** following the guidelines above
 
-3. Make your changes, ensuring they follow the code guidelines (see next section).
+4. **Test thoroughly** using test mode and actual removal
 
-4. Commit your changes and provide a clear and concise commit message.
+5. **Commit with a clear message**:
+   ```bash
+   git commit -m "add: Samsung Game Launcher to safe removal list
+   
+   - Package: com.samsung.android.game.gamehome
+   - Risk: safe
+   - Tested on Galaxy S21, Android 13
+   - No issues observed after 48h testing"
+   ```
 
-5. Push your branch to your forked repository.
+6. **Push your branch**:
+   ```bash
+   git push origin add-samsung-game-launcher
+   ```
 
-6. Submit a pull request to the main repository's `main` branch.
-
-Our team will review your pull request as soon as possible and provide feedback or merge it if everything looks good.
+7. **Submit a pull request** using our PR template
 
 ## Code Guidelines
 
-When submitting code contributions, please adhere to the following guidelines:
-
-- Follow consistent code formatting and style.
-
-- Use meaningful variable and function names.
-
-- Include appropriate comments for clarity and understanding.
-
-- Write clear and concise commit messages.
+- Follow consistent code formatting and style
+- Use meaningful variable and function names
+- Include appropriate comments for clarity
+- Write clear and concise commit messages
+- Test your changes before submitting
 
 ## Issue Reporting
 
-If you encounter any issues or bugs while using the UIBloatwareRegistry repository, please consider opening an issue on GitHub. When reporting an issue, please provide the following information:
+### For Bugs or Problems
 
-- Detailed description of the issue or bug.
+Use the **"Removal Problem Report"** issue template and include:
+- Device model and Android version
+- Package that caused the issue
+- Symptoms observed
+- Steps to reproduce
+- Whether you were able to restore functionality
 
-- Steps to reproduce the issue.
+### For New Package Entries
 
-- Any relevant error messages or screenshots.
+Use the **"New Package Entry"** issue template
 
-This will help us understand and address the problem effectively.
+### For Risk Level Updates
 
-## Feature Requests
-
-If you have any feature requests or suggestions for UIBloatwareRegistry, we encourage you to open an issue on GitHub. Please provide a clear and detailed description of the requested feature or enhancement.
-
-## Feedback
-
-We value your feedback and suggestions for improving UIBloatwareRegistry. If you have any general feedback, ideas, or questions, feel free to open an issue on GitHub or contact us through other available channels.
+Use the **"Update Risk Level"** issue template if you have evidence that a package's risk level should change
 
 ## License
 
 By contributing to the UIBloatwareRegistry repository, you agree that your contributions will be licensed under the [MIT License](https://opensource.org/licenses/MIT).
 
+---
+
 We appreciate your contributions and look forward to building a valuable resource for managing Android bloatware together!
+
+For more detailed information, see [CONTRIBUTION_GUIDE.md](CONTRIBUTION_GUIDE.md).
 
