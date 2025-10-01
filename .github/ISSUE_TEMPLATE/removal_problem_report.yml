@@ -1,4 +1,4 @@
-name: 🐛 Removal Problem Report
+name: Removal Problem Report
 description: Report issues encountered when removing a specific package
 title: "[REMOVAL ISSUE]: "
 labels: ["bug", "removal-issue"]
@@ -68,10 +68,10 @@ body:
       label: Issue Severity
       description: How severe is the problem?
       options:
-        - 🔴 Critical - Device won't boot or major functionality lost
-        - 🟠 High - Important features broken but device usable
-        - 🟡 Medium - Minor features affected
-        - 🟢 Low - Cosmetic or very minor issues
+        - Critical - Device won't boot or major functionality lost
+        - High - Important features broken but device usable
+        - Medium - Minor features affected
+        - Low - Cosmetic or very minor issues
     validations:
       required: true
 

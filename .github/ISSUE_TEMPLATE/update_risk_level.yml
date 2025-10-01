@@ -1,4 +1,4 @@
-name: 🔄 Update Risk Level
+name: Update Risk Level
 description: Report incorrect risk level or suggest an update based on new testing
 title: "[RISK UPDATE]: "
 labels: ["risk-update", "needs-review"]
@@ -50,10 +50,10 @@ body:
       label: Current Risk Level
       description: What is the current risk level in the registry?
       options:
-        - 🟢 Safe
-        - 🟡 Caution
-        - 🔴 Dangerous
-        - ⚪ Unknown
+        - Safe
+        - Caution
+        - Dangerous
+        - Unknown
     validations:
       required: true
 
@@ -63,10 +63,10 @@ body:
       label: Proposed Risk Level
       description: What should the risk level be changed to?
       options:
-        - 🟢 Safe
-        - 🟡 Caution
-        - 🔴 Dangerous
-        - ⚪ Unknown
+        - Safe
+        - Caution
+        - Dangerous
+        - Unknown
     validations:
       required: true
 

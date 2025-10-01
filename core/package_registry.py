@@ -2,7 +2,6 @@
 Package Registry Manager
 
 This module provides utilities for managing the centralized bloatware package registry.
-It allows loading, querying, and modifying package data from the registry file.
 """
 
 import json
@@ -12,17 +11,8 @@ from pathlib import Path
 
 
 class PackageRegistry:
-    """Manager for the centralized package registry"""
-    
     def __init__(self, registry_file: str = None):
-        """
-        Initialize the package registry
-        
-        Args:
-            registry_file: Path to the registry JSON file. If None, uses default location.
-        """
         if registry_file is None:
-            # Default to packages_registry.json in the root directory
             root_dir = Path(__file__).parent.parent
             registry_file = root_dir / 'packages_registry.json'
         
@@ -31,7 +21,6 @@ class PackageRegistry:
         self._load_registry()
     
     def _load_registry(self) -> None:
-        """Load the registry from the JSON file"""
         try:
             if self.registry_file.exists():
                 with open(self.registry_file, 'r', encoding='utf-8') as f:
@@ -44,7 +33,6 @@ class PackageRegistry:
             raise RuntimeError(f"Failed to load registry: {e}")
     
     def save_registry(self) -> None:
-        """Save the current registry data back to the file"""
         try:
             with open(self.registry_file, 'w', encoding='utf-8') as f:
                 json.dump(self.registry_data, f, indent=2, ensure_ascii=False)
@@ -52,31 +40,19 @@ class PackageRegistry:
             raise RuntimeError(f"Failed to save registry: {e}")
     
     def get_brands(self) -> List[str]:
-        """Get list of all supported brands"""
         return list(self.registry_data.get('brands', {}).keys())
     
     def get_brand_name(self, brand_id: str) -> Optional[str]:
-        """Get the display name for a brand"""
         brand_data = self.registry_data.get('brands', {}).get(brand_id)
         if brand_data:
             return brand_data.get('name', brand_id.title())
         return None
     
     def get_brand_categories(self, brand: str) -> Dict[str, Dict]:
-        """Get all categories for a specific brand"""
         brand_data = self.registry_data.get('brands', {}).get(brand.lower(), {})
         return brand_data.get('categories', {})
     
     def get_packages_for_brand(self, brand: str) -> Dict[str, List[Dict]]:
-        """
-        Get all packages for a specific brand, organized by category
-        
-        Args:
-            brand: Brand identifier (e.g., 'samsung', 'xiaomi')
-            
-        Returns:
-            Dictionary mapping category names to lists of package dictionaries
-        """
         categories = self.get_brand_categories(brand)
         result = {}
         
@@ -86,15 +62,6 @@ class PackageRegistry:
         return result
     
     def get_all_packages_flat(self, brand: str) -> List[Dict]:
-        """
-        Get all packages for a brand as a flat list
-        
-        Args:
-            brand: Brand identifier
-            
-        Returns:
-            List of package dictionaries with added 'category' field
-        """
         packages = []
         categories = self.get_packages_for_brand(brand)
         
@@ -107,16 +74,6 @@ class PackageRegistry:
         return packages
     
     def get_package_info(self, brand: str, package_name: str) -> Optional[Dict]:
-        """
-        Get information about a specific package
-        
-        Args:
-            brand: Brand identifier
-            package_name: Full package name (e.g., 'com.samsung.android.bixby.agent')
-            
-        Returns:
-            Package dictionary or None if not found
-        """
         all_packages = self.get_all_packages_flat(brand)
         for package in all_packages:
             if package.get('name') == package_name:
@@ -124,28 +81,15 @@ class PackageRegistry:
         return None
     
     def add_package(self, brand: str, category: str, package_data: Dict) -> bool:
-        """
-        Add a new package to the registry
-        
-        Args:
-            brand: Brand identifier
-            category: Category identifier
-            package_data: Dictionary with 'name', 'description', and 'risk' keys
-            
-        Returns:
-            True if successful, False otherwise
-        """
         try:
             brand = brand.lower()
             
-            # Ensure brand exists
             if brand not in self.registry_data.get('brands', {}):
                 self.registry_data.setdefault('brands', {})[brand] = {
                     'name': brand.title(),
                     'categories': {}
                 }
             
-            # Ensure category exists
             brand_data = self.registry_data['brands'][brand]
             if category not in brand_data.get('categories', {}):
                 brand_data.setdefault('categories', {})[category] = {
@@ -154,15 +98,12 @@ class PackageRegistry:
                     'packages': []
                 }
             
-            # Add package
             packages = brand_data['categories'][category]['packages']
             
-            # Check for duplicates
             for existing in packages:
                 if existing['name'] == package_data['name']:
-                    return False  # Package already exists
+                    return False
             
-            # Validate package data
             required_fields = ['name', 'description', 'risk']
             if not all(field in package_data for field in required_fields):
                 raise ValueError(f"Package data must contain: {', '.join(required_fields)}")
@@ -175,16 +116,6 @@ class PackageRegistry:
             return False
     
     def remove_package(self, brand: str, package_name: str) -> bool:
-        """
-        Remove a package from the registry
-        
-        Args:
-            brand: Brand identifier
-            package_name: Full package name to remove
-            
-        Returns:
-            True if successful, False otherwise
-        """
         try:
             brand = brand.lower()
             categories = self.get_brand_categories(brand)
@@ -196,24 +127,13 @@ class PackageRegistry:
                         packages.pop(i)
                         return True
             
-            return False  # Package not found
+            return False
             
         except Exception as e:
             print(f"Error removing package: {e}")
             return False
     
     def update_package(self, brand: str, package_name: str, updates: Dict) -> bool:
-        """
-        Update a package's information
-        
-        Args:
-            brand: Brand identifier
-            package_name: Full package name
-            updates: Dictionary of fields to update
-            
-        Returns:
-            True if successful, False otherwise
-        """
         try:
             brand = brand.lower()
             categories = self.get_brand_categories(brand)
@@ -225,30 +145,19 @@ class PackageRegistry:
                         package.update(updates)
                         return True
             
-            return False  # Package not found
+            return False
             
         except Exception as e:
             print(f"Error updating package: {e}")
             return False
     
     def get_risk_level_info(self, risk_level: str) -> Optional[Dict]:
-        """Get information about a risk level"""
         return self.registry_data.get('risk_levels', {}).get(risk_level)
     
     def get_all_risk_levels(self) -> Dict[str, Dict]:
-        """Get all risk level definitions"""
         return self.registry_data.get('risk_levels', {})
     
     def convert_to_legacy_format(self, brand: str) -> Dict:
-        """
-        Convert registry data to the legacy format used by BloatwareRemover
-        
-        Args:
-            brand: Brand identifier
-            
-        Returns:
-            Dictionary in the old format with 'categories' key
-        """
         categories_data = self.get_brand_categories(brand)
         legacy_format = {'categories': {}}
         
@@ -259,16 +168,6 @@ class PackageRegistry:
         return legacy_format
     
     def search_packages(self, query: str, brand: Optional[str] = None) -> List[Dict]:
-        """
-        Search for packages by name or description
-        
-        Args:
-            query: Search query (case-insensitive)
-            brand: Optional brand to limit search to
-            
-        Returns:
-            List of matching packages with brand and category information
-        """
         results = []
         query_lower = query.lower()
         
@@ -287,5 +186,4 @@ class PackageRegistry:
 
 
 def get_registry() -> PackageRegistry:
-    """Get the default package registry instance"""
     return PackageRegistry()

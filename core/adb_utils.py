@@ -20,36 +20,31 @@ DEFAULT_TCPIP_PORT = 5555
 
 @dataclass
 class DeviceState:
-    """Represents the state of a connected adb device."""
-
     serial: str
     state: str
     details: str = ""
 
     def summary(self) -> str:
-        """Return a concise human-readable summary of the device."""
         extra = f" {self.details}" if self.details else ""
         return f"{self.serial} [{self.state}]{extra}"
 
 
 class ADBError(Exception):
-    """Base class for adb related errors."""
+    pass
 
 
 class ADBNotFoundError(ADBError):
-    """Raised when the adb executable cannot be located."""
+    pass
 
 
 class ADBCommandError(ADBError):
-    """Raised when an adb command fails or times out."""
-
     def __init__(
         self,
         message: str,
         *,
         returncode: Optional[int] = None,
         stdout: str = "",
-        stderr: str = "",
+        stderr: str = ""
     ) -> None:
         super().__init__(message)
         self.returncode = returncode
@@ -67,16 +62,12 @@ class ADBCommandError(ADBError):
 
 
 class DeviceSelectionError(ADBError):
-    """Raised when no suitable device can be selected."""
-
     def __init__(self, message: str, *, devices: Optional[List[DeviceState]] = None) -> None:
         super().__init__(message)
         self.devices: List[DeviceState] = devices or []
 
 
 def _iter_adb_candidates(preferred: Optional[str] = None) -> Iterable[Path]:
-    """Yield potential adb executable paths in priority order."""
-
     seen: set[str] = set()
 
     def _emit(path: Optional[str]) -> Iterable[Path]:
@@ -126,8 +117,6 @@ def _iter_adb_candidates(preferred: Optional[str] = None) -> Iterable[Path]:
 
 
 def _platform_tools_directory() -> Path:
-    """Location where downloaded platform tools should reside."""
-
     return Path(__file__).resolve().parent.parent / "platform-tools"
 
 
@@ -159,7 +148,6 @@ def _download_and_extract_platform_tools(destination: Path) -> None:
         with urllib.request.urlopen(url) as response, archive_path.open("wb") as archive_file:
             shutil.copyfileobj(response, archive_file)
 
-        # Extract into parent directory so the bundled `platform-tools` folder is created.
         with zipfile.ZipFile(archive_path) as archive:
             archive.extractall(parent)
 
@@ -173,7 +161,7 @@ def _ensure_platform_tools_installed() -> Optional[str]:
 
     try:
         _download_and_extract_platform_tools(destination)
-    except Exception as exc:  # noqa: BLE001 - propagate as adb error
+    except Exception as exc:
         raise ADBNotFoundError(
             "Failed to download Android platform tools automatically. "
             "Please install the Android SDK platform tools manually and rerun the program."
@@ -183,7 +171,6 @@ def _ensure_platform_tools_installed() -> Optional[str]:
         try:
             adb_path.chmod(adb_path.stat().st_mode | 0o111)
         except OSError:
-            # If chmod fails (e.g., on Windows), continue silently.
             pass
         if os.access(adb_path, os.X_OK):
             return str(adb_path)
@@ -192,8 +179,6 @@ def _ensure_platform_tools_installed() -> Optional[str]:
 
 
 def resolve_adb_path(preferred: Optional[str] = None) -> str:
-    """Return a usable adb executable path or raise an informative error."""
-
     for candidate in _iter_adb_candidates(preferred):
         if candidate.is_file() and os.access(candidate, os.X_OK):
             return str(candidate)
@@ -215,10 +200,8 @@ def run_command(
     *,
     device_serial: Optional[str] = None,
     timeout: int = DEFAULT_TIMEOUT,
-    check: bool = True,
+    check: bool = True
 ) -> subprocess.CompletedProcess:
-    """Execute an adb command and optionally raise on failure."""
-
     if not adb_path:
         raise ADBNotFoundError("ADB path is not configured")
 
@@ -235,7 +218,7 @@ def run_command(
             encoding="utf-8",
             errors="replace",
             timeout=timeout,
-            check=False,
+            check=False
         )
     except FileNotFoundError as exc:
         raise ADBNotFoundError(str(exc)) from exc
@@ -243,7 +226,7 @@ def run_command(
         raise ADBCommandError(
             "ADB command timed out",
             stdout=(exc.stdout or ""),
-            stderr=(exc.stderr or ""),
+            stderr=(exc.stderr or "")
         ) from exc
 
     if check and result.returncode != 0:
@@ -251,21 +234,17 @@ def run_command(
             "ADB command failed",
             returncode=result.returncode,
             stdout=result.stdout,
-            stderr=result.stderr,
+            stderr=result.stderr
         )
 
     return result
 
 
 def start_server(adb_path: str, *, timeout: int = DEFAULT_TIMEOUT) -> None:
-    """Ensure the adb server is running."""
-
     run_command(adb_path, ["start-server"], timeout=timeout, check=False)
 
 
 def parse_devices_output(stdout: str) -> List[DeviceState]:
-    """Parse the output of `adb devices -l` into structured entries."""
-
     devices: List[DeviceState] = []
     for raw_line in stdout.splitlines():
         line = raw_line.strip()
@@ -288,8 +267,6 @@ def parse_devices_output(stdout: str) -> List[DeviceState]:
 
 
 def list_devices(adb_path: str, *, timeout: int = DEFAULT_TIMEOUT) -> List[DeviceState]:
-    """Return all connected devices using `adb devices -l`."""
-
     start_server(adb_path, timeout=timeout)
     result = run_command(adb_path, ["devices", "-l"], timeout=timeout, check=False)
     if result.returncode not in (0, None):
@@ -297,7 +274,7 @@ def list_devices(adb_path: str, *, timeout: int = DEFAULT_TIMEOUT) -> List[Devic
             "Failed to query connected devices",
             returncode=result.returncode,
             stdout=result.stdout,
-            stderr=result.stderr,
+            stderr=result.stderr
         )
     return parse_devices_output(result.stdout)
 
@@ -306,10 +283,8 @@ def find_authorized_device(
     adb_path: str,
     *,
     preferred_serial: Optional[str] = None,
-    timeout: int = DEFAULT_TIMEOUT,
+    timeout: int = DEFAULT_TIMEOUT
 ) -> DeviceState:
-    """Return an authorized device, preferring a specific serial when given."""
-
     devices = list_devices(adb_path, timeout=timeout)
     authorized = [device for device in devices if device.state == "device"]
 
@@ -321,7 +296,7 @@ def find_authorized_device(
     if not authorized:
         raise DeviceSelectionError(
             "No authorized devices detected",
-            devices=devices,
+            devices=devices
         )
 
     return authorized[0]
@@ -353,8 +328,6 @@ WIFI_SERIAL_PATTERN = re.compile(r"^[\w.-]+:\d+$")
 
 
 def is_wifi_serial(serial: str) -> bool:
-    """Return True when the serial refers to a network-connected device."""
-
     if not serial:
         return False
     if serial.startswith("emulator-"):
@@ -367,16 +340,14 @@ def activate_tcpip_mode(
     *,
     device_serial: Optional[str] = None,
     port: int = DEFAULT_TCPIP_PORT,
-    timeout: int = DEFAULT_TIMEOUT,
+    timeout: int = DEFAULT_TIMEOUT
 ) -> None:
-    """Ask a connected device to listen for TCP/IP debugging connections."""
-
     run_command(
         adb_path,
         ["tcpip", str(port)],
         device_serial=device_serial,
         timeout=timeout,
-        check=True,
+        check=True
     )
 
 
@@ -385,15 +356,13 @@ def pair_device(
     host_with_port: str,
     pairing_code: str,
     *,
-    timeout: int = DEFAULT_TIMEOUT,
+    timeout: int = DEFAULT_TIMEOUT
 ) -> None:
-    """Pair with a device over Wi-Fi using the provided pairing code."""
-
     result = run_command(
         adb_path,
         ["pair", host_with_port, pairing_code],
         timeout=timeout,
-        check=False,
+        check=False
     )
 
     if result.returncode != 0:
@@ -401,7 +370,7 @@ def pair_device(
             "Failed to pair with Wi-Fi device",
             returncode=result.returncode,
             stdout=result.stdout,
-            stderr=result.stderr,
+            stderr=result.stderr
         )
 
 
@@ -410,14 +379,15 @@ def connect_wifi_device(
     host_with_port: str,
     *,
     timeout: int = DEFAULT_TIMEOUT,
+    wait_for_online: bool = True
 ) -> DeviceState:
-    """Connect to a Wi-Fi adb endpoint and return the resulting device state."""
+    import time
 
     result = run_command(
         adb_path,
         ["connect", host_with_port],
         timeout=timeout,
-        check=False,
+        check=False
     )
 
     if result.returncode != 0:
@@ -425,9 +395,26 @@ def connect_wifi_device(
             "Failed to connect to Wi-Fi device",
             returncode=result.returncode,
             stdout=result.stdout,
-            stderr=result.stderr,
+            stderr=result.stderr
         )
 
+    max_wait = 10 if wait_for_online else 2
+    for attempt in range(max_wait):
+        refreshed = list_devices(adb_path, timeout=timeout)
+        for device in refreshed:
+            if device.serial == host_with_port:
+                if device.state == 'device':
+                    return device
+                if attempt < max_wait - 1 and device.state == 'offline':
+                    if attempt == 0:
+                        print(f"Device connected but showing as [{device.state}]. Waiting for authorization...")
+                    time.sleep(1)
+                    break
+                return device
+        
+        if attempt < max_wait - 1:
+            time.sleep(0.5)
+    
     refreshed = list_devices(adb_path, timeout=timeout)
     for device in refreshed:
         if device.serial == host_with_port:
@@ -435,7 +422,7 @@ def connect_wifi_device(
 
     raise DeviceSelectionError(
         "Connected to Wi-Fi device but it did not appear in the device list",
-        devices=refreshed,
+        devices=refreshed
     )
 
 
@@ -443,13 +430,11 @@ def disconnect_device(
     adb_path: str,
     host_with_port: str,
     *,
-    timeout: int = DEFAULT_TIMEOUT,
+    timeout: int = DEFAULT_TIMEOUT
 ) -> None:
-    """Disconnect a specific adb endpoint."""
-
     run_command(
         adb_path,
         ["disconnect", host_with_port],
         timeout=timeout,
-        check=False,
+        check=False
     )

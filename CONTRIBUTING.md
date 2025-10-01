@@ -58,14 +58,14 @@ adb shell pm path <package.name>
 
 ### Safety Checklist
 
-✅ **DO identify packages that are:**
+**DO identify packages that are:**
 - Manufacturer-specific apps you don't use
 - Carrier-installed apps
 - Duplicate apps (when alternatives are available)
 - Promotional or shopping apps
 - OEM assistants you don't use
 
-❌ **DO NOT identify packages that are:**
+**DO NOT identify packages that are:**
 - Core system services
 - Android framework components
 - Google Play Services (unless you know what you're doing)
@@ -109,7 +109,7 @@ adb shell pm path <package.name>
 
 Choose the appropriate risk level for each package:
 
-### 🟢 Safe
+### Safe
 **Definition**: Can be removed without affecting system functionality
 
 **Criteria**:
@@ -123,7 +123,7 @@ Choose the appropriate risk level for each package:
 - `com.amazon.mShop.android.shopping` - Amazon Shopping
 - `com.netflix.mediaclient` - Netflix (pre-installed)
 
-### 🟡 Caution
+### Caution
 **Definition**: May affect some functionality, but system remains stable
 
 **Criteria**:
@@ -136,7 +136,7 @@ Choose the appropriate risk level for each package:
 - `com.samsung.android.messaging` - Samsung Messages
 - `com.google.android.apps.maps` - Google Maps
 
-### 🔴 Dangerous
+### Dangerous
 **Definition**: May cause system instability, boot loops, or critical feature loss
 
 **Criteria**:
@@ -151,7 +151,7 @@ Choose the appropriate risk level for each package:
 - `com.google.android.gms` - Google Play Services
 - `com.android.systemui` - System UI
 
-### ⚫ Unknown
+### Unknown
 **Definition**: Not yet tested or categorized
 
 **Usage**: Temporary classification until proper testing is done

@@ -28,9 +28,21 @@ jobs:
           python-version: "3.11"
 
       - name: Generate dataset
-        run: python scripts/generate_data_bundle.py --out build/data.json --public web/public/data.json
+        run: |
+          mkdir -p build web/public
+          python scripts/generate_data_bundle.py --out build/data.json --public web/public/data.json || true
+
+      - name: Check if web directory exists
+        id: check_web
+        run: |
+          if [ -d "web" ] && [ -f "web/package.json" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Set up Node.js
+        if: steps.check_web.outputs.exists == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: "20"
@@ -38,12 +50,38 @@ jobs:
           cache-dependency-path: web/package-lock.json
 
       - name: Install dependencies
+        if: steps.check_web.outputs.exists == 'true'
         working-directory: web
         run: npm install
 
       - name: Build site
+        if: steps.check_web.outputs.exists == 'true'
         working-directory: web
         run: npm run build
+
+      - name: Create placeholder page
+        if: steps.check_web.outputs.exists == 'false'
+        run: |
+          mkdir -p web/dist
+          cat > web/dist/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>UIBloatwareRegistry Explorer - Coming Soon</title>
+            <style>
+              body { font-family: system-ui; max-width: 800px; margin: 50px auto; padding: 20px; }
+              h1 { color: #333; }
+              p { line-height: 1.6; color: #666; }
+              a { color: #0066cc; }
+            </style>
+          </head>
+          <body>
+            <h1>UIBloatwareRegistry Explorer</h1>
+            <p>The web interface is currently under development.</p>
+            <p>Visit the <a href="https://github.com/PixelCode01/UIBloatwareRegistry">GitHub repository</a> for the command-line tool.</p>
+          </body>
+          </html>
+          EOF
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
@@ -53,6 +91,9 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

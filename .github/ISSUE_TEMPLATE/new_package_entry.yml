@@ -1,4 +1,4 @@
-name: 🆕 New Package Entry
+name: New Package Entry
 description: Submit a new bloatware package to add to the registry
 title: "[NEW PACKAGE]: "
 labels: ["enhancement", "new-package"]
@@ -82,10 +82,10 @@ body:
       label: Risk Level
       description: How safe is it to remove this package?
       options:
-        - 🟢 Safe - No system functionality affected
-        - 🟡 Caution - May affect some functionality
-        - 🔴 Dangerous - May cause system instability
-        - ⚪ Unknown - Needs more testing
+        - Safe - No system functionality affected
+        - Caution - May affect some functionality
+        - Dangerous - May cause system instability
+        - Unknown - Needs more testing
     validations:
       required: true
 
@@ -114,11 +114,11 @@ body:
         **Testing Method:** Removed via ADB (pm uninstall --user 0)
         
         **Tests Performed:**
-        - Basic phone functions: ✅ Working
+        - Basic phone functions: Working
         - Affected features: Bixby not launching (expected)
-        - System stability: ✅ No issues
-        - Boot time: ✅ Normal
-        - Other apps: ✅ No crashes
+        - System stability: No issues
+        - Boot time: Normal
+        - Other apps: No crashes
         
         **Recovery Tested:** Yes, successfully reinstalled with cmd package install-existing
     validations:

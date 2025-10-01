@@ -6,7 +6,7 @@ The new contribution system simplifies adding bloatware packages to the registry
 
 ## What's New?
 
-### ✅ Before (Old System)
+### Before (Old System)
 To add a new package, you needed to:
 1. Edit the brand's Python file (`Samsung/samsung_remover.py`)
 2. Edit the brand's Shell script (`Samsung/samsung_remover.sh`)
@@ -14,7 +14,7 @@ To add a new package, you needed to:
 4. Ensure consistency across all three files
 5. Know Python, Shell, and Markdown syntax
 
-### 🎉 After (New System)
+### After (New System)
 Now you can:
 1. Run `python contribute.py` (interactive tool)
 2. OR edit `packages_registry.json` directly
@@ -85,46 +85,46 @@ Edit `packages_registry.json` directly:
 ### New System
 ```
 UIBloatwareRegistry/
-├── packages_registry.json      # ⭐ Single source of truth
-├── contribute.py               # ⭐ Contribution tool
+├── packages_registry.json      # Single source of truth
+├── contribute.py               # Contribution tool
 ├── core/
-│   └── package_registry.py     # ⭐ Registry manager
+│   └── package_registry.py     # Registry manager
 ├── .github/
-│   ├── ISSUE_TEMPLATE/         # ⭐ Issue templates
+│   ├── ISSUE_TEMPLATE/         # Issue templates
 │   │   ├── new_package_entry.yml
 │   │   ├── update_risk_level.yml
 │   │   └── removal_problem_report.yml
-│   └── pull_request_template.md # ⭐ PR template
-└── CONTRIBUTING.md             # ⭐ Enhanced guidelines
+│   └── pull_request_template.md # PR template
+└── CONTRIBUTING.md             # Enhanced guidelines
 ```
 
 ### Old System (Deprecated)
 ```
 UIBloatwareRegistry/
 ├── Samsung/
-│   ├── samsung_remover.py      # ⚠️ Will use registry
-│   ├── samsung_remover.sh      # ⚠️ May be deprecated
-│   └── samsung-bloatware-list.md # ⚠️ Generated from registry
+│   ├── samsung_remover.py      # Will use registry
+│   ├── samsung_remover.sh      # May be deprecated
+│   └── samsung-bloatware-list.md # Generated from registry
 ```
 
 ## Risk Level Guidelines
 
-### 🟢 SAFE
+### SAFE
 - No system functionality affected
 - Can be removed without concerns
 - Examples: Bixby, Samsung Cloud, carrier apps
 
-### 🟡 CAUTION
+### CAUTION
 - May affect some functionality
 - Remove only if you don't use it
 - Examples: Default SMS app, Browser
 
-### 🔴 DANGEROUS
+### DANGEROUS
 - May cause system instability
 - NOT recommended for average users
 - Examples: Google Play Services, System launcher
 
-### ⚪ UNKNOWN
+### UNKNOWN
 - Not yet tested or categorized
 - Research before removing
 - Treat as DANGEROUS until proven otherwise
@@ -169,14 +169,14 @@ python contribute.py
 ```
 
 Features:
-- ✅ Add new packages
-- ✅ Update existing packages
-- ✅ Remove packages
-- ✅ Search packages
-- ✅ View brands and categories
-- ✅ Risk level guidelines
-- ✅ Input validation
-- ✅ Duplicate detection
+- Add new packages
+- Update existing packages
+- Remove packages
+- Search packages
+- View brands and categories
+- Risk level guidelines
+- Input validation
+- Duplicate detection
 
 ### CLI Mode
 ```bash
@@ -303,10 +303,10 @@ A: Git version control keeps everything safe. Just submit a correction PR!
 
 ## Support
 
-- 📖 Read [CONTRIBUTING.md](../CONTRIBUTING.md)
-- 💬 Start a [Discussion](https://github.com/PixelCode01/UIBloatwareRegistry/discussions)
-- 🐛 Report an [Issue](https://github.com/PixelCode01/UIBloatwareRegistry/issues)
+- Read [CONTRIBUTING.md](../CONTRIBUTING.md)
+- Start a [Discussion](https://github.com/PixelCode01/UIBloatwareRegistry/discussions)
+- Report an [Issue](https://github.com/PixelCode01/UIBloatwareRegistry/issues)
 
 ---
 
-**Happy Contributing! 🎉**
+**Happy Contributing!**
