@@ -11,9 +11,11 @@ import urllib.request
 import zipfile
 from dataclasses import dataclass
 from pathlib import Path
+import re
 from typing import Iterable, List, Optional
 
 DEFAULT_TIMEOUT = 15
+DEFAULT_TCPIP_PORT = 5555
 
 
 @dataclass
@@ -330,12 +332,124 @@ __all__ = [
     "ADBError",
     "ADBNotFoundError",
     "DEFAULT_TIMEOUT",
+    "DEFAULT_TCPIP_PORT",
     "DeviceSelectionError",
     "DeviceState",
+    "activate_tcpip_mode",
+    "connect_wifi_device",
+    "disconnect_device",
     "find_authorized_device",
+    "is_wifi_serial",
     "list_devices",
     "parse_devices_output",
+    "pair_device",
     "resolve_adb_path",
     "run_command",
     "start_server",
 ]
+
+
+WIFI_SERIAL_PATTERN = re.compile(r"^[\w.-]+:\d+$")
+
+
+def is_wifi_serial(serial: str) -> bool:
+    """Return True when the serial refers to a network-connected device."""
+
+    if not serial:
+        return False
+    if serial.startswith("emulator-"):
+        return False
+    return bool(WIFI_SERIAL_PATTERN.match(serial))
+
+
+def activate_tcpip_mode(
+    adb_path: str,
+    *,
+    device_serial: Optional[str] = None,
+    port: int = DEFAULT_TCPIP_PORT,
+    timeout: int = DEFAULT_TIMEOUT,
+) -> None:
+    """Ask a connected device to listen for TCP/IP debugging connections."""
+
+    run_command(
+        adb_path,
+        ["tcpip", str(port)],
+        device_serial=device_serial,
+        timeout=timeout,
+        check=True,
+    )
+
+
+def pair_device(
+    adb_path: str,
+    host_with_port: str,
+    pairing_code: str,
+    *,
+    timeout: int = DEFAULT_TIMEOUT,
+) -> None:
+    """Pair with a device over Wi-Fi using the provided pairing code."""
+
+    result = run_command(
+        adb_path,
+        ["pair", host_with_port, pairing_code],
+        timeout=timeout,
+        check=False,
+    )
+
+    if result.returncode != 0:
+        raise ADBCommandError(
+            "Failed to pair with Wi-Fi device",
+            returncode=result.returncode,
+            stdout=result.stdout,
+            stderr=result.stderr,
+        )
+
+
+def connect_wifi_device(
+    adb_path: str,
+    host_with_port: str,
+    *,
+    timeout: int = DEFAULT_TIMEOUT,
+) -> DeviceState:
+    """Connect to a Wi-Fi adb endpoint and return the resulting device state."""
+
+    result = run_command(
+        adb_path,
+        ["connect", host_with_port],
+        timeout=timeout,
+        check=False,
+    )
+
+    if result.returncode != 0:
+        raise ADBCommandError(
+            "Failed to connect to Wi-Fi device",
+            returncode=result.returncode,
+            stdout=result.stdout,
+            stderr=result.stderr,
+        )
+
+    refreshed = list_devices(adb_path, timeout=timeout)
+    for device in refreshed:
+        if device.serial == host_with_port:
+            return device
+
+    raise DeviceSelectionError(
+        "Connected to Wi-Fi device but it did not appear in the device list",
+        devices=refreshed,
+    )
+
+
+def disconnect_device(
+    adb_path: str,
+    host_with_port: str,
+    *,
+    timeout: int = DEFAULT_TIMEOUT,
+) -> None:
+    """Disconnect a specific adb endpoint."""
+
+    run_command(
+        adb_path,
+        ["disconnect", host_with_port],
+        timeout=timeout,
+        check=False,
+    )

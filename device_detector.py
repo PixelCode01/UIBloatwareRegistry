@@ -1,11 +1,17 @@
-import re
+﻿import re
 from typing import Optional, List
 
 from core.adb_utils import (
     ADBCommandError,
     ADBNotFoundError,
+    DeviceSelectionError,
     DeviceState,
+    DEFAULT_TCPIP_PORT,
+    activate_tcpip_mode,
+    connect_wifi_device,
+    is_wifi_serial,
     list_devices,
+    pair_device,
     resolve_adb_path,
     run_command,
 )
@@ -31,6 +37,7 @@ class DeviceDetector:
         self.test_mode = test_mode
         self.adb_path: Optional[str] = None
         self.device_serial: Optional[str] = None
+        self._last_wifi_endpoint: Optional[str] = None
     
     def get_device_info(self) -> Optional[dict]:
         while True:
@@ -63,6 +70,8 @@ class DeviceDetector:
                 print("Failed to communicate with adb. Ensure the platform tools are installed and your device is connected.")
                 if exc.stderr:
                     print(exc.stderr.strip())
+                if self._prompt_wifi_connection("Attempt to reconnect over Wi-Fi ADB?"):
+                    continue
                 decision = self._prompt_enable_test_mode()
                 if decision == 'test':
                     continue
@@ -72,6 +81,8 @@ class DeviceDetector:
 
             if not devices:
                 print("No devices detected. Ensure USB debugging is enabled and the device is unlocked.")
+                if self._prompt_wifi_connection("Would you like to try Wi-Fi ADB instead?"):
+                    continue
                 decision = self._prompt_enable_test_mode()
                 if decision == 'test':
                     continue
@@ -87,8 +98,12 @@ class DeviceDetector:
                 for device in unauthorized:
                     print(f"  - {device.summary()}")
                 print("Unlock your device and accept the USB debugging prompt, then try again.")
+                if self._prompt_wifi_connection("Switch to Wi-Fi debugging?"):
+                    continue
 
             if not authorized:
+                if self._prompt_wifi_connection("No authorised devices detected. Try Wi-Fi ADB?"):
+                    continue
                 decision = self._prompt_enable_test_mode()
                 if decision == 'test':
                     continue
@@ -106,6 +121,8 @@ class DeviceDetector:
                 continue
 
             self.device_serial = selected.serial
+            if is_wifi_serial(self.device_serial):
+                self._last_wifi_endpoint = self.device_serial
 
             try:
                 brand = self._get_prop('ro.product.brand')
@@ -272,6 +289,23 @@ class DeviceDetector:
 
             print("Please respond with 'y', 'n', or type 'quit' to cancel.")
 
+    def _prompt_connection_retry(self) -> str:
+        while True:
+            response = (
+                input("Type 'retry' once the issue is fixed, 'test' to continue in test mode, or 'quit' to cancel: ")
+                .strip()
+                .lower()
+            )
+
+            if response in {'retry', 'r', 'yes', 'y'}:
+                return 'retry'
+            if response in {'test', 't'}:
+                return 'test'
+            if response in {'quit', 'q', 'exit', 'cancel'}:
+                return 'quit'
+
+            print("Invalid option. Please type 'retry', 'test', or 'quit'.")
+
     def _select_device(self, devices: List[DeviceState]) -> Optional[DeviceState]:
         if not devices:
             return None
@@ -316,3 +350,137 @@ class DeviceDetector:
             check=True,
         )
         return result.stdout.strip()
+
+    def enable_tcpip_on_current_device(self, port: int = DEFAULT_TCPIP_PORT) -> bool:
+        if not self.adb_path or not self.device_serial:
+            return False
+
+        try:
+            activate_tcpip_mode(
+                self.adb_path,
+                device_serial=self.device_serial,
+                port=port,
+            )
+            return True
+        except ADBCommandError as exc:
+            print("Failed to enable TCP/IP mode on the connected device.")
+            if exc.stderr:
+                print(exc.stderr.strip())
+            return False
+
+    def connect_via_wifi(
+        self,
+        endpoint: Optional[str] = None,
+        *,
+        pairing_host: Optional[str] = None,
+        pairing_code: Optional[str] = None,
+    ) -> bool:
+        if endpoint:
+            if ':' not in endpoint:
+                endpoint = f"{endpoint}:{DEFAULT_TCPIP_PORT}"
+            pairing_host = pairing_host or endpoint
+            try:
+                if pairing_code:
+                    pair_device(self.adb_path or resolve_adb_path(), pairing_host, pairing_code)
+                device = connect_wifi_device(self.adb_path or resolve_adb_path(), endpoint)
+            except (ADBCommandError, DeviceSelectionError) as exc:
+                print("Failed to connect over Wi-Fi.")
+                if isinstance(exc, ADBCommandError) and exc.stderr:
+                    print(exc.stderr.strip())
+                if isinstance(exc, DeviceSelectionError) and exc.devices:
+                    print("Currently visible devices:")
+                    for dev in exc.devices:
+                        print(f"  - {dev.summary()}")
+                return False
+
+            self.adb_path = self.adb_path or resolve_adb_path()
+            self.device_serial = device.serial
+            self._last_wifi_endpoint = endpoint
+            print(f"Connected to {device.summary()} over Wi-Fi.")
+            return True
+
+        return self._connect_via_wifi()
+
+    def _prompt_wifi_connection(self, prompt: str) -> bool:
+        while True:
+            answer = input(f"{prompt} (y/n): ").strip().lower()
+            if answer in {'y', 'yes'}:
+                return self._connect_via_wifi()
+            if answer in {'n', 'no', 'skip', 's'}:
+                return False
+            print("Please answer with 'y' or 'n'.")
+
+    def _connect_via_wifi(self) -> bool:
+        if not self.adb_path:
+            try:
+                self.adb_path = resolve_adb_path()
+            except ADBNotFoundError as exc:
+                print(str(exc))
+                return False
+
+        default_host = self._last_wifi_endpoint or ""
+        prompt = "Enter the device IP address (append :port if not using 5555): "
+        if default_host:
+            prompt = f"Enter the device IP address (press Enter for {default_host}): "
+
+        endpoint = input(prompt).strip()
+        if not endpoint and default_host:
+            endpoint = default_host
+
+        if not endpoint:
+            print("No address entered. Skipping Wi-Fi connection.")
+            return False
+
+        if ':' not in endpoint:
+            endpoint = f"{endpoint}:{DEFAULT_TCPIP_PORT}"
+
+        needs_pairing: Optional[bool] = None
+        while needs_pairing is None:
+            decision = input("Does the device show a pairing code? (y/n): ").strip().lower()
+            if decision in {'y', 'yes'}:
+                needs_pairing = True
+            elif decision in {'n', 'no'}:
+                needs_pairing = False
+            else:
+                print("Please answer with 'y' or 'n'.")
+
+        if needs_pairing:
+            pair_host = input(
+                "Enter the pairing IP:port shown on the device (leave blank to reuse the same host): "
+            ).strip()
+            if not pair_host:
+                pair_host = endpoint
+
+            pairing_code = input("Enter the six-digit pairing code: ").strip()
+            if not pairing_code:
+                print("Pairing code missing. Cannot continue with Wi-Fi pairing.")
+                return False
+
+            try:
+                pair_device(self.adb_path, pair_host, pairing_code)
+                print(f"Paired with {pair_host}.")
+            except ADBCommandError as exc:
+                print("Failed to pair with the device.")
+                if exc.stderr:
+                    print(exc.stderr.strip())
+                return False
+
+        try:
+            device = connect_wifi_device(self.adb_path, endpoint)
+        except ADBCommandError as exc:
+            print("Failed to connect over Wi-Fi.")
+            if exc.stderr:
+                print(exc.stderr.strip())
+            return False
+        except DeviceSelectionError as exc:
+            print("Connected but the device did not appear in the adb list.")
+            if exc.devices:
+                print("Currently visible devices:")
+                for device in exc.devices:
+                    print(f"  - {device.summary()}")
+            return False
+
+        self.device_serial = device.serial
+        self._last_wifi_endpoint = endpoint
+        print(f"Connected to {device.summary()} over Wi-Fi.")
+        return True
