@@ -1,0 +1,210 @@
+name: 🐛 Removal Problem Report
+description: Report issues encountered when removing a specific package
+title: "[REMOVAL ISSUE]: "
+labels: ["bug", "removal-issue"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Report Package Removal Issues
+        
+        Use this template to report problems that occurred after removing a specific bloatware package.
+
+  - type: dropdown
+    id: brand
+    attributes:
+      label: Device Brand
+      description: What brand is your device?
+      options:
+        - Samsung
+        - Xiaomi
+        - Oppo
+        - Vivo
+        - Realme
+        - OnePlus
+        - Huawei
+        - Honor
+        - Motorola
+        - Nothing
+        - Tecno
+        - Infinix
+        - Lenovo
+        - Google
+        - Asus
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: device_model
+    attributes:
+      label: Device Model
+      description: Specific device model
+      placeholder: "Samsung Galaxy S21 Ultra"
+    validations:
+      required: true
+
+  - type: input
+    id: android_version
+    attributes:
+      label: Android Version
+      description: Android version and custom UI (if applicable)
+      placeholder: "Android 13 / One UI 5.1"
+    validations:
+      required: true
+
+  - type: input
+    id: package_name
+    attributes:
+      label: Package Name
+      description: Which package caused the issue?
+      placeholder: "com.example.package"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Issue Severity
+      description: How severe is the problem?
+      options:
+        - 🔴 Critical - Device won't boot or major functionality lost
+        - 🟠 High - Important features broken but device usable
+        - 🟡 Medium - Minor features affected
+        - 🟢 Low - Cosmetic or very minor issues
+    validations:
+      required: true
+
+  - type: textarea
+    id: issue_description
+    attributes:
+      label: Issue Description
+      description: Describe what went wrong after removing the package
+      placeholder: |
+        After removing this package:
+        - Feature X stopped working
+        - App Y crashes on launch
+        - System shows error message: "..."
+        - Device behavior changed: ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: removal_method
+    attributes:
+      label: Removal Method
+      description: How did you remove the package?
+      placeholder: |
+        Method used:
+        - [ ] Using this tool (main.py)
+        - [ ] ADB command: pm uninstall --user 0
+        - [ ] ADB command: pm uninstall -k --user 0
+        - [ ] Other ADB command (specify)
+        - [ ] Third-party app (specify)
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction_steps
+    attributes:
+      label: Steps to Reproduce
+      description: How can others reproduce this issue?
+      placeholder: |
+        1. Remove package using: adb shell pm uninstall --user 0 com.example.package
+        2. Reboot device
+        3. Open Settings app
+        4. Navigate to Feature X
+        5. Observe error message
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+      placeholder: "Package should be removed safely without affecting other features..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual_behavior
+    attributes:
+      label: Actual Behavior
+      description: What actually happened?
+      placeholder: "System crashes when trying to access feature X..."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: recovery_attempted
+    attributes:
+      label: Recovery Attempted
+      description: Did you try to fix the issue?
+      options:
+        - "Yes - Successfully recovered"
+        - "Yes - Partially recovered"
+        - "Yes - Unable to recover"
+        - "No - Not yet attempted"
+    validations:
+      required: true
+
+  - type: textarea
+    id: recovery_method
+    attributes:
+      label: Recovery Method (if attempted)
+      description: What did you try to fix the issue?
+      placeholder: |
+        - Reinstalled package: adb shell cmd package install-existing com.example.package
+        - Factory reset: Yes/No
+        - Other method: ...
+        
+        Result: ...
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error Logs (Optional)
+      description: Provide any relevant error logs or logcat output
+      placeholder: |
+        ```
+        Paste logcat or error messages here
+        ```
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: related_packages
+    attributes:
+      label: Related Packages
+      description: Were other packages removed at the same time?
+      placeholder: |
+        - com.example.package1
+        - com.example.package2
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I have searched for existing issues about this package
+          required: true
+        - label: This issue is reproducible (happened multiple times)
+          required: false
+        - label: I have tried to recover/restore the package
+          required: false
+        - label: I can provide additional testing if needed
+          required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any other relevant information (screenshots, videos, links)
+    validations:
+      required: false
