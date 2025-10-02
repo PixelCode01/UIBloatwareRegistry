@@ -7,10 +7,8 @@ This shell script version is specifically designed for Honor device users who wa
 Shizuku is an Android app that allows you to run ADB commands directly on your device without connecting to a computer. It's perfect for removing bloatware when you don't have access to a PC.
 
 ## Prerequisites
-
-1. **Honor device** running Magic UI (any version)
-2. **Shizuku app** installed and activated
-3. **Terminal app** that supports Shizuku (like Termux or Shizuku's built-in terminal)
+1. **Shizuku app** installed and activated
+2. **Terminal app** that supports Shizuku (like Termux or Shizuku's built-in terminal)
 
 ## Installation Steps
 
