@@ -1,4 +1,5 @@
 # Android Bloatware Remover
+![GitHub All Releases](https://img.shields.io/github/downloads/PixelCode01/UIBloatwareRegistry/total?style=flat-square)
 
 Remove unwanted pre-installed apps from your Android phone without root access. Works with Samsung, Xiaomi, Oppo, Vivo, Realme, Tecno, OnePlus, Huawei, Honor, Motorola, Nothing, Asus, Google Pixel, Infinix, and Lenovo devices.
 
